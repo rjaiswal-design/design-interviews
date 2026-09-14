@@ -347,26 +347,46 @@ invented day. Imports add; nothing already on the board is touched.
 
 ## Wiring it to Supabase
 
-It is deployed but not yet shared: everything lives in the viewer's own
-IndexedDB, so the board on the live URL is private to whoever opens it. That is
-a real step — the UI and the whole model are settled and exercised — but it is
-not the tool yet.
+The schema is [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
+— four tables mirroring the four object stores, RLS on all of them, and the
+activity log enforced append-only. Apply it with:
 
-[`src/lib/db.ts`](src/lib/db.ts) is the only file that knows where data lives.
-Pointing it at Supabase means reimplementing its functions against four tables
-that mirror the object stores — `candidates`, `rounds`, `segments`, `events` —
-and nothing above it changes: the store already treats every call as async and
-already refetches after a write, so a network round-trip changes no caller.
+```bash
+psql "$SUPABASE_DB_URL" -f supabase/migrations/0001_init.sql
+```
 
-Three things to decide when the project exists:
+It ends with a query that should return four tables, `rls = t`, and six
+policies.
 
-1. **Auth.** `me.ts` becomes a read of the session user, and `TEvent.actorEmail`
-   stops being self-declared — which is the point of having recorded it.
-2. **`events` is append-only.** Nothing in the app updates or deletes a log line
-   except removing the candidate it belongs to. That should be a policy, not a
-   convention.
-3. **Row-level security on `segments`.** A transcript is the most sensitive
-   thing here; it should be readable by the hiring team and nobody else.
+**Auth has to come first.** Every policy is gated on `is_team()` — a signed-in
+`@noon.com` address — so until Supabase Auth is wired the tables read as empty
+for everyone. That is the correct failure direction: the anon key ships inside a
+JavaScript bundle on a public URL, so it is an identifier rather than a secret,
+and RLS is the only thing between that URL and every candidate's phone number
+and every interview transcript.
+
+Then [`src/lib/db.ts`](src/lib/db.ts) — the only file that knows where data
+lives. Nothing above it changes: the store already treats every call as async
+and already refetches after a write, so a network round-trip changes no caller.
+Six differences to handle in that file:
+
+| App | Postgres |
+|-----|----------|
+| `camelCase` | `snake_case` |
+| `TSegment.text` | `segments.body` — `text` as a column name beside a type called `text` reads badly |
+| `scheduledAt: 0` | `scheduled_at: null` — unscheduled is a real state, not 1970 |
+| `roundId: ''` | `events.round_id: null` |
+| `ref` from `max(ref) + 1` | a sequence default — the client-side version races two people adding at once |
+| `removeCandidate` deletes events by hand | the `on delete cascade` does it, and the append-only policy forbids the manual delete |
+
+`updated_at` is set by a trigger, so the value the app sends is ignored. A
+timestamp a client can choose is a timestamp a client can get wrong.
+
+Realtime is on for `candidates`, `rounds` and `events` — without it two people
+on the board do not see each other's changes until one reloads, which is most of
+the way back to the per-browser version. `segments` is left out deliberately: a
+transcript arrives as one paste of a few hundred rows, and broadcasting each of
+them says nothing that one refetch of `line_count` does not.
 
 ## What this does not do yet
 
