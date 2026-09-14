@@ -17,7 +17,7 @@ import { inProcess } from './candidateStatus';
 import { newId } from './id';
 import { ladderFor } from './ladder';
 import { parseCsv } from './csv';
-import type { TCandidate, TCandidateStatus, TRound } from '../types';
+import type { TCandidate, TCandidateStatus, TRound, TTrack } from '../types';
 
 /** field -> the header spellings that mean it, normalised. */
 const FIELDS: Record<string, string[]> = {
@@ -48,6 +48,9 @@ const FIELDS: Record<string, string[]> = {
     'organization',
     'org',
   ],
+  /** Which ladder they walk. A column, because an export from a hiring pipeline
+   *  knows whether it is filling a product or a visual opening. */
+  track: ['track', 'discipline', 'ladder', 'pipeline', 'team', 'craft'],
   previousPosition: [
     'theirtitle',
     'currenttitle',
@@ -146,6 +149,14 @@ export const importRows = (text: string, startRef: number): TImportResult => {
     const id = newId('cand');
     const refRaw = Number.parseInt(at('ref'), 10);
     const status = readStatus(at('status'));
+    // Product unless the file says otherwise. Read from the track column if
+    // there is one, and otherwise guessed from the opening — "Motion Designer"
+    // and "Visual Designer" are not walking the product ladder.
+    const track: TTrack = /visual|motion|brand|graphic|illustrat/i.test(
+      `${at('track')} ${at('role')} ${at('previousPosition')}`,
+    )
+      ? 'visual'
+      : 'product';
 
     result.candidates.push({
       id,
@@ -161,6 +172,7 @@ export const importRows = (text: string, startRef: number): TImportResult => {
       previousPosition: at('previousPosition'),
       source: at('source'),
       status,
+      track,
       notes: at('notes'),
       createdAt: now,
       updatedAt: now,
@@ -184,12 +196,14 @@ export const importRows = (text: string, startRef: number): TImportResult => {
     // date is describing a funnel already under way, and dropping the date
     // would lose something the file told us.
     if (inProcess(status)) {
-      ladderFor().forEach((rung, j) => {
+      ladderFor(track).forEach((rung, j) => {
         result.rounds.push({
           id: newId('round'),
           candidateId: id,
           kind: rung.kind,
-          interviewers: j === 0 ? panel : [],
+          // The file's panel on round one if it named anyone, otherwise the
+          // rung's own owner.
+          interviewers: j === 0 && panel.length > 0 ? panel : [...rung.owners],
           scheduledAt: j === 0 ? first : 0,
           durationMin: rung.durationMin,
           status: 'scheduled',

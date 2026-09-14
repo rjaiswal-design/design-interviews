@@ -39,8 +39,25 @@ import type { TCandidate, TCandidateStatus, TEvent, TRound, TSegment } from '../
  * This is a read-time default, not a migration: nothing is rewritten until the
  * row is next patched, and the row is correct in memory either way.
  */
+/**
+ * Rounds the single four-rung ladder produced, mapped onto the product track.
+ *
+ * Not "retired" — they are the same conversations under the same names, and the
+ * product-design ladder is what that one ladder became when visual design got
+ * its own. Retiring them would litter every existing candidate with four
+ * unreadable rounds *and* five new empty ones. `intro`, `craft`, `systems` and
+ * `bar` stay genuinely retired: no current rung means what they meant.
+ */
+const RENAMED_KIND: Record<string, TRound['kind']> = {
+  portfolio: 'pd_portfolio',
+  critique: 'pd_critique',
+  product: 'pd_product',
+  culture: 'pd_culture',
+};
+
 const hydrateRound = (r: TRound): TRound => ({
   ...r,
+  kind: RENAMED_KIND[r.kind as string] ?? r.kind,
   zoomUrl: r.zoomUrl ?? '',
   recordingUrl: r.recordingUrl ?? '',
   lineCount: r.lineCount ?? 0,
@@ -72,6 +89,9 @@ const LEGACY_STATUS: Record<string, TCandidateStatus> = {
  *  first rows were written, and so did the funnel's vocabulary. */
 const hydrateCandidate = (c: TCandidate): TCandidate => ({
   ...c,
+  // Everyone on file predates the split, and the ladder they walked is the one
+  // product design kept.
+  track: c.track ?? 'product',
   status: LEGACY_STATUS[c.status as string] ?? c.status,
   phone: c.phone ?? '',
   previousCompany: c.previousCompany ?? '',

@@ -11,13 +11,14 @@
 import { newId } from './id';
 import { inProcess } from './candidateStatus';
 import { DECISION_LABELS, ladderFor } from './ladder';
-import type { TCandidate, TDecision, TEvent, TRound, TRoundStatus } from '../types';
+import type { TCandidate, TDecision, TEvent, TRound, TRoundStatus, TTrack } from '../types';
 
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
 
 type TSketch = {
   name: string;
+  track: TTrack;
   role: string;
   level: string;
   location: string;
@@ -40,6 +41,7 @@ const mail = (person: string) =>
 const SKETCHES: TSketch[] = [
   {
     name: 'Noor Al-Hashimi',
+    track: 'product',
     role: 'Product Designer, noonFood',
     level: 'Senior',
     location: 'Dubai',
@@ -57,6 +59,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Tanvi Rao',
+    track: 'product',
     role: 'Design Systems, Platform',
     level: 'IC4',
     location: 'Bengaluru',
@@ -74,6 +77,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Omar Fahmy',
+    track: 'product',
     role: 'Product Designer, Marketplace',
     level: 'IC3',
     location: 'Cairo',
@@ -91,6 +95,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Lina Haddad',
+    track: 'visual',
     role: 'Motion & Brand',
     level: 'Senior',
     location: 'Riyadh',
@@ -108,6 +113,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Karan Desai',
+    track: 'product',
     role: 'Product Designer, Minutes',
     level: 'IC3',
     location: 'Dubai',
@@ -125,6 +131,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Aisha Rahman',
+    track: 'product',
     role: 'Product Designer, Growth',
     level: 'IC4',
     location: 'Dubai',
@@ -139,6 +146,7 @@ const SKETCHES: TSketch[] = [
   // rounds sheet, and worth being visible on a first run.
   {
     name: 'Dana Khalil',
+    track: 'visual',
     role: 'Product Designer, Growth',
     level: 'IC3',
     location: 'Amman',
@@ -151,6 +159,7 @@ const SKETCHES: TSketch[] = [
   },
   {
     name: 'Ravi Shankar',
+    track: 'product',
     role: 'Design Systems, Platform',
     level: 'IC4',
     location: 'Bengaluru',
@@ -205,6 +214,7 @@ export const buildSeed = (): {
       previousCompany: sk.company,
       previousPosition: sk.position,
       source: sk.source,
+      track: sk.track,
       status: sk.status,
       notes: '',
       createdAt: now - (30 - i) * DAY,
@@ -217,14 +227,15 @@ export const buildSeed = (): {
     // booked cannot show what is outstanding.
     if (!inProcess(sk.status)) return;
 
-    ladderFor().forEach((r, j) => {
+    ladderFor(sk.track).forEach((r, j) => {
       const step = sk.progress[j];
       const roundId = newId('round');
       rounds.push({
         id: roundId,
         candidateId: id,
         kind: r.kind,
-        interviewers: step ? [PEOPLE[(i + j) % PEOPLE.length]] : [],
+        // The rung's own owner, which is the point of having them.
+        interviewers: [...r.owners],
         scheduledAt: step ? now + step.offsetDays * DAY + (j % 3) * HOUR : 0,
         durationMin: r.durationMin,
         status: step?.status ?? 'scheduled',
@@ -243,7 +254,7 @@ export const buildSeed = (): {
       if (!step) return;
 
       const at = now + step.offsetDays * DAY;
-      const who = PEOPLE[(i + j) % PEOPLE.length];
+      const who = r.owners[0] ?? PEOPLE[(i + j) % PEOPLE.length];
 
       // An event records something that *happened*, so its `t` is always in the
       // past — booking a round two days before it runs is a past act even when

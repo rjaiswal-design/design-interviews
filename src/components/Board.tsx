@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { toCsv, download } from '../lib/csv';
 import { initials, relative } from '../lib/format';
 import { DECISION_LABELS, LADDER, STATUS_LABELS, ladderFor, rung,
+  TRACKS,
+  TRACK_LABELS,
   byLadder,
 } from '../lib/ladder';
 import { go } from '../lib/route';
@@ -100,6 +102,7 @@ const Board = ({ mode }: TProps) => {
   const events = useStore((s) => s.events);
 
   const [q, setQ] = useState('');
+  const [fTrack, setFTrack] = useState('');
   const [fRung, setFRung] = useState('');
   const [fStatus, setFStatus] = useState('');
   const [fPanel, setFPanel] = useState('');
@@ -138,6 +141,7 @@ const Board = ({ mode }: TProps) => {
       .filter((r) => {
         const c = byId.get(r.candidateId);
         if (!c) return false;
+        if (fTrack && c.track !== fTrack) return false;
         if (fRung && r.kind !== fRung) return false;
         if (fStatus && r.status !== fStatus) return false;
         if (fPanel && !r.interviewers.includes(fPanel)) return false;
@@ -150,7 +154,7 @@ const Board = ({ mode }: TProps) => {
         );
       })
       .sort(orderByActivity(latest));
-  }, [rounds, byId, latest, q, fRung, fStatus, fPanel]);
+  }, [rounds, byId, latest, q, fTrack, fRung, fStatus, fPanel]);
 
   const visiblePeople = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -175,16 +179,20 @@ const Board = ({ mode }: TProps) => {
    * `latest` above: build the index, read it in the cell.
    */
   const ladders = useMemo(() => {
-    const order = ladderFor().map((r) => r.kind);
     const m = new Map<string, TRound[]>();
     for (const r of rounds) {
       const list = m.get(r.candidateId);
       if (list) list.push(r);
       else m.set(r.candidateId, [r]);
     }
-    for (const list of m.values()) list.sort(byLadder(order));
+    // Sorted against the candidate's own ladder — the two tracks have different
+    // rungs in different orders, so one shared order would scramble one of them.
+    for (const [candidateId, list] of m) {
+      const track = byId.get(candidateId)?.track ?? 'product';
+      list.sort(byLadder(ladderFor(track).map((r) => r.kind)));
+    }
     return m;
-  }, [rounds]);
+  }, [rounds, byId]);
 
   const roundsOf = (c: TCandidate): TRound[] => ladders.get(c.id) ?? [];
 
@@ -193,6 +201,7 @@ const Board = ({ mode }: TProps) => {
       [
         'ref',
         'candidate',
+        'track',
         'applying for',
         'level',
         'status',
@@ -207,6 +216,7 @@ const Board = ({ mode }: TProps) => {
       ...visiblePeople.map((c) => [
         c.ref,
         c.name,
+        TRACK_LABELS[c.track],
         c.role,
         c.level,
         CANDIDATE_STATUS_LABELS[c.status],
@@ -227,6 +237,7 @@ const Board = ({ mode }: TProps) => {
       [
         'ref',
         'candidate',
+        'track',
         'applying for',
         'level',
         'round',
@@ -241,6 +252,7 @@ const Board = ({ mode }: TProps) => {
         return [
           c?.ref ?? '',
           c?.name ?? '',
+          c ? TRACK_LABELS[c.track] : '',
           c?.role ?? '',
           c?.level ?? '',
           rung(r.kind).label,
@@ -260,7 +272,7 @@ const Board = ({ mode }: TProps) => {
    *  were looking at. */
   const exportCsv = mode === 'people' ? exportCandidatesCsv : exportRoundsCsv;
 
-  const active = fRung || fStatus || fPanel || q;
+  const active = fTrack || fRung || fStatus || fPanel || q;
 
   return (
     <>
@@ -284,12 +296,24 @@ const Board = ({ mode }: TProps) => {
         {mode === 'rounds' && (
           <>
             <FilterChip
-              label="Rung"
+              label="Track"
+              value={fTrack}
+              onChange={setFTrack}
+              options={TRACKS.map((t) => ({
+                value: t,
+                label: TRACK_LABELS[t],
+                n: rounds.filter((x) => byId.get(x.candidateId)?.track === t).length,
+              }))}
+            />
+            <FilterChip
+              label="Round"
               value={fRung}
               onChange={setFRung}
+              // Nine rungs across two ladders, so each is prefixed with its
+              // track — there is a "Portfolio" and a "Culture fit" on both.
               options={LADDER.map((r) => ({
                 value: r.kind,
-                label: `${r.no}. ${r.label}`,
+                label: `${r.track === 'visual' ? 'VD' : 'PD'} ${r.no}. ${r.label}`,
                 n: rounds.filter((x) => x.kind === r.kind).length,
               }))}
             />
@@ -326,6 +350,7 @@ const Board = ({ mode }: TProps) => {
             className="btn-quiet"
             onClick={() => {
               setQ('');
+              setFTrack('');
               setFRung('');
               setFStatus('');
               setFPanel('');
@@ -457,7 +482,7 @@ const Board = ({ mode }: TProps) => {
             <p>Import candidates from the database, or add one by hand.</p>
           </div>
         ) : (
-          <table className="log" style={{ minWidth: 1320 }}>
+          <table className="log" style={{ minWidth: 1440 }}>
             <thead>
               {/*
                 * This view is about the person, not their progress.
@@ -471,6 +496,7 @@ const Board = ({ mode }: TProps) => {
               <tr>
                 <th className="col-ref">Ref</th>
                 <th className="col-who">Candidate</th>
+                <th style={{ width: 130 }}>Track</th>
                 <th className="col-role">Applying for</th>
                 {/* "Status", not "Where" — that read fine until there was a
                     real Location column beside it. */}
@@ -507,6 +533,9 @@ const Board = ({ mode }: TProps) => {
                         </span>
                       </button>
                     </td>
+                    {/* Which ladder they walk — it decides their rounds and who
+                        runs them, so it is a column and not a detail. */}
+                    <td className="panel-cell">{TRACK_LABELS[c.track]}</td>
                     <td className="panel-cell">{c.role || <span className="none">—</span>}</td>
                     <td>
                       {/* The most load-bearing column on this view. Without it

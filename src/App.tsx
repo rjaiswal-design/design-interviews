@@ -7,6 +7,7 @@ import AsciiMesh from './components/AsciiMesh';
 import Board from './components/Board';
 import CandidatePanel from './components/CandidatePanel';
 import ImportDialog from './components/ImportDialog';
+import PipelineView from './components/PipelineView';
 import RoundPage from './components/RoundPage';
 import TranscriptReader from './components/TranscriptReader';
 import WhoAreYou from './components/WhoAreYou';
@@ -62,7 +63,11 @@ const App = () => {
     ];
   }, [candidates, rounds]);
 
-  const mode = route.view === 'people' ? 'people' : 'rounds';
+  const tab: 'rounds' | 'people' | 'pipeline' =
+    route.view === 'people' ? 'people' : route.view === 'pipeline' ? 'pipeline' : 'rounds';
+  /** The board's two modes. The panel closes back to whichever board you were
+   *  on, and there is no panel over the pipeline. */
+  const mode = tab === 'people' ? 'people' : 'rounds';
 
   const roundById = (id: string) => rounds.find((r) => r.id === id);
 
@@ -137,19 +142,27 @@ const App = () => {
 
           <button
             type="button"
-            className={`nav-tab${mode === 'rounds' ? ' on' : ''}`}
+            className={`nav-tab${tab === 'rounds' ? ' on' : ''}`}
             onClick={() => go({ view: 'rounds' })}
           >
             Rounds
-            {mode === 'rounds' && <span className="underline" />}
+            {tab === 'rounds' && <span className="underline" />}
           </button>
           <button
             type="button"
-            className={`nav-tab${mode === 'people' ? ' on' : ''}`}
+            className={`nav-tab${tab === 'people' ? ' on' : ''}`}
             onClick={() => go({ view: 'people' })}
           >
             Candidates
-            {mode === 'people' && <span className="underline" />}
+            {tab === 'people' && <span className="underline" />}
+          </button>
+          <button
+            type="button"
+            className={`nav-tab${tab === 'pipeline' ? ' on' : ''}`}
+            onClick={() => go({ view: 'pipeline' })}
+          >
+            Pipeline
+            {tab === 'pipeline' && <span className="underline" />}
           </button>
 
           <div className="spacer" />
@@ -211,7 +224,7 @@ const App = () => {
           </div>
         </div>
 
-        <Board mode={mode} />
+        {tab === 'pipeline' ? <PipelineView /> : <Board mode={mode} />}
       </div>
 
       {panelFor && (

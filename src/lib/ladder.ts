@@ -4,48 +4,64 @@ import type {
   TRoundStatus,
   TSignal,
   TStoredRoundKind,
+  TTrack,
 } from '../types';
 
 /**
- * The ladder. Four rounds, the same four for everyone.
+ * The two ladders.
  *
- * It is a fixed list rather than a per-level one: a ladder that varies by band
- * means two candidates for the same role can be compared on different evidence,
- * and the argument at the end is then about who got which rounds rather than
- * about the work.
+ * Product and visual designers are interviewed differently, by different
+ * people, against different things — so they are two processes rather than one
+ * with optional rungs. A candidate's `track` decides which they walk, and every
+ * candidate on a track walks all of it: a ladder that varies within a track
+ * would mean two people up for the same opening compared on different
+ * evidence, and the argument at the end would be about who got which rounds.
  *
- * `signals` is what each rung is actually qualified to judge, and it is the
- * load-bearing field here. Scoring craft in the culture round is the failure
- * mode it exists to prevent: every interviewer scoring every signal produces
- * six averages and no information, because most of them were guesses from
- * people who never saw the work.
+ * `owners` is who runs the round by default. New rounds are pre-assigned to
+ * them, because "Portfolio with Ayaneshu" is how the process is actually
+ * described out loud — and an unassigned round is one nobody is going to book.
+ * It is a default, not a rule: the panel on any round is editable.
+ *
+ * `signals` is what a round is qualified to judge, and it is load-bearing.
+ * Scoring craft in the culture round is the failure mode it prevents: every
+ * interviewer scoring every signal produces six averages and no information,
+ * because most were guesses from people who never saw the work.
  */
 export type TRung = {
   kind: TStoredRoundKind;
-  /** Position on the ladder, 1-based. `0` means retired — off the ladder, kept
-   *  because rounds were run on it. */
+  /** Position on its own ladder, 1-based. `0` means retired. */
   no: number;
   label: string;
   /** What it is for, in one line, shown above the question script. */
   purpose: string;
   durationMin: number;
+  /** Who runs it by default. */
+  owners: string[];
   signals: TSignal[];
-  /** The script. A spine, not a questionnaire — the room shows them as prompts
-   *  the interviewer ticks off, and going off them is the point of a good
-   *  interview. */
+  /** The script. A spine, not a questionnaire. */
   prompts: string[];
-  /** True for a rung the process no longer has. Its rounds are readable and
-   *  editable; they are just not part of anybody's ladder any more. */
+  /** Which ladder it belongs to. Absent on a retired rung. */
+  track?: TTrack;
+  /** True for a rung no ladder has any more. Its rounds stay readable. */
   retired?: boolean;
 };
 
-export const LADDER: TRung[] = [
+export const TRACK_LABELS: Record<TTrack, string> = {
+  product: 'Product design',
+  visual: 'Visual design',
+};
+
+export const TRACKS: TTrack[] = ['product', 'visual'];
+
+const PRODUCT: TRung[] = [
   {
-    kind: 'portfolio',
+    kind: 'pd_portfolio',
     no: 1,
     label: 'Portfolio',
     purpose: 'One project, end to end, in their own words. Depth over breadth.',
     durationMin: 60,
+    owners: ['Ayaneshu'],
+    track: 'product',
     signals: ['craft', 'product', 'communication'],
     prompts: [
       'Pick one project. Not the prettiest — the one you learned most from.',
@@ -57,12 +73,14 @@ export const LADDER: TRung[] = [
     ],
   },
   {
-    kind: 'critique',
+    kind: 'pd_critique',
     no: 2,
-    label: 'Whiteboarding & critique',
+    label: 'Design critique & whiteboarding',
     purpose:
       'A live problem on our surface, then our work put in front of them. Watching them think, and watching them judge.',
     durationMin: 60,
+    owners: ['Rahul'],
+    track: 'product',
     signals: ['craft', 'systems', 'communication'],
     prompts: [
       'Here is the brief. Take five minutes and ask me anything first.',
@@ -75,11 +93,50 @@ export const LADDER: TRung[] = [
     ],
   },
   {
-    kind: 'product',
+    kind: 'pd_ai_coding',
     no: 3,
-    label: 'Product',
-    purpose: 'With a PM. Whether they can hold a business problem, not just a screen.',
+    label: 'AI coding',
+    purpose:
+      'Can they build the thing, with the tools that now exist? Not whether they are an engineer — whether they can get an idea running and judge what comes back.',
+    durationMin: 60,
+    owners: ['Arnab'],
+    track: 'product',
+    signals: ['craft', 'systems', 'product'],
+    prompts: [
+      'Show me something you have built with an AI tool. Anything that ran.',
+      'Take this brief and get something on screen. Talk while you do it.',
+      'It gave you the wrong thing. How do you tell, and what do you say next?',
+      'Where does it stop being faster than doing it yourself?',
+      'What would you not let it decide?',
+      'How would you hand this to an engineer without insulting them?',
+    ],
+  },
+  {
+    kind: 'pd_culture',
+    no: 4,
+    label: 'Culture fit',
+    purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
+    owners: ['Ayush'],
+    track: 'product',
+    signals: ['ambition', 'collaboration'],
+    prompts: [
+      'What is the hardest feedback you have been given, and what came of it?',
+      'Tell me about a time you were the reason something did not ship.',
+      'Who have you made better, and how do you know?',
+      'What kind of problem do you want to be holding in two years?',
+      'What would make you leave a job you liked?',
+      'What do you want to know about us?',
+    ],
+  },
+  {
+    kind: 'pd_product',
+    no: 5,
+    label: 'Product thinking',
+    purpose: 'Whether they can hold a business problem, not just a screen.',
+    durationMin: 45,
+    owners: ['Saumya'],
+    track: 'product',
     signals: ['product', 'collaboration', 'communication'],
     prompts: [
       'What is the business actually paying you to change?',
@@ -90,12 +147,71 @@ export const LADDER: TRung[] = [
       'What is the team you are on now wrong about?',
     ],
   },
+];
+
+const VISUAL: TRung[] = [
   {
-    kind: 'culture',
+    kind: 'vd_portfolio',
+    no: 1,
+    label: 'Portfolio',
+    purpose: 'The work itself, and whether they can say why it looks the way it does.',
+    durationMin: 60,
+    owners: ['Sanket', 'Jithin'],
+    track: 'visual',
+    signals: ['craft', 'communication'],
+    prompts: [
+      'Take me through the piece you are proudest of.',
+      'What was the brief, and what did you do that was not in it?',
+      'Show me an early version. What changed and why?',
+      'Whose work do you steal from?',
+      'Which of these would you redo now?',
+      'What is the best thing you have made that nobody saw?',
+    ],
+  },
+  {
+    kind: 'vd_working',
+    no: 2,
+    label: 'Working session',
+    purpose: 'Making something together, live. How they take direction and how they push back.',
+    durationMin: 90,
+    owners: ['Tamanna'],
+    track: 'visual',
+    signals: ['craft', 'collaboration', 'communication'],
+    prompts: [
+      'Here is the brief and the assets. Start wherever you like.',
+      'Talk me through what you are reaching for before you reach for it.',
+      'Now make it work at 320px, and in Arabic.',
+      'I do not like it. Ask me better questions than "why not".',
+      'Take it somewhere I have not asked for.',
+      'Which version would you ship, and what are you giving up?',
+    ],
+  },
+  {
+    kind: 'vd_product',
+    no: 3,
+    label: 'Product round',
+    purpose: 'Whether the work is doing a job, not just looking right.',
+    durationMin: 45,
+    owners: ['Rahul'],
+    track: 'visual',
+    signals: ['product', 'systems', 'communication'],
+    prompts: [
+      'What was this campaign for? Did it work?',
+      'How do you know when a visual decision is costing conversion?',
+      'Tell me about working inside a brand you did not write.',
+      'A PM asks for something you think is ugly and effective. What then?',
+      'How do you make fifty assets without making fifty decisions?',
+      'What is the difference between a brand system and a template?',
+    ],
+  },
+  {
+    kind: 'vd_culture',
     no: 4,
-    label: 'Culture',
+    label: 'Culture fit',
     purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
+    owners: ['Ayush'],
+    track: 'visual',
     signals: ['ambition', 'collaboration'],
     prompts: [
       'What is the hardest feedback you have been given, and what came of it?',
@@ -108,13 +224,21 @@ export const LADDER: TRung[] = [
   },
 ];
 
+export const LADDERS: Record<TTrack, TRung[]> = { product: PRODUCT, visual: VISUAL };
+
+/** Every rung on every ladder, in track order. For filters and the pipeline. */
+export const LADDER: TRung[] = [...PRODUCT, ...VISUAL];
+
+/** The rungs a candidate on this track walks. All of them. */
+export const ladderFor = (track: TTrack): TRung[] => LADDERS[track] ?? PRODUCT;
+
 /**
- * Rungs the ladder used to have, by the name their rounds are stored under.
+ * Rungs the process used to have, by the name their rounds are stored under.
  *
- * Without this, `rung()` fell through to `LADDER[0]` and a completed intro
- * round rendered as "1. Portfolio" — two rows claiming to be the same
- * conversation, one of which never happened. A retired rung has no script and
- * no signals, because nothing new is ever run on it.
+ * Without this, `rung()` fell through to the first rung of the first ladder and
+ * a completed intro round rendered as "1. Portfolio" — two rows claiming to be
+ * the same conversation, one of which never happened. A retired rung has no
+ * script and no signals, because nothing new is ever run on it.
  */
 const RETIRED: Record<TRetiredKind, string> = {
   intro: 'Intro',
@@ -135,21 +259,12 @@ export const rung = (kind: TStoredRoundKind): TRung => {
     purpose:
       'This round was run on a rung the process no longer has. It is kept because it happened; nothing new is scheduled on it.',
     durationMin: 0,
+    owners: [],
     signals: [],
     prompts: [],
     retired: true,
   };
 };
-
-/**
- * The rungs a candidate walks. Everyone walks all four.
- *
- * Kept as a function rather than exporting `LADDER` directly at every call
- * site: it used to depend on level, it is the one place that would change again
- * if a round ever became conditional, and the callers already read the right
- * way round.
- */
-export const ladderFor = (): TRung[] => LADDER;
 
 export const SIGNAL_LABELS: Record<TSignal, string> = {
   craft: 'Craft',
@@ -179,32 +294,12 @@ export const STATUS_LABELS: Record<TRoundStatus, string> = {
 export const SCORE_LABELS = ['—', 'Strong no', 'No', 'Yes', 'Strong yes'] as const;
 
 /**
- * Ladder order, with retired rungs last.
- *
- * `order.indexOf(kind)` returns -1 for a rung that is no longer on the ladder,
- * which sorts it *above* round one — so a retired intro round appeared at the
- * top of the track as though the process began with it. Anything off the
- * ladder belongs after everything on it.
- */
-export const byLadder =
-  (order: TStoredRoundKind[]) =>
-  (a: { kind: TStoredRoundKind }, b: { kind: TStoredRoundKind }): number => {
-    const ia = order.indexOf(a.kind);
-    const ib = order.indexOf(b.kind);
-    return (ia < 0 ? Number.MAX_SAFE_INTEGER : ia) - (ib < 0 ? Number.MAX_SAFE_INTEGER : ib);
-  };
-
-/**
  * How a rung is drawn on the track: by the call, not by the status.
  *
  * A complete round with a no on it is amber and a cancelled one is grey,
  * because what the eye is looking for when it scans a track is "how is this
- * going" — and status alone cannot answer that. Four green "complete" bars
- * look identical whether they were four yeses or four nos.
- *
- * It lives here rather than beside the component that uses it because a file
- * that exports both a component and a helper cannot Fast Refresh, and Vite
- * says so out loud on every save.
+ * going" — and status alone cannot answer that. Four green "complete" bars look
+ * identical whether they were four yeses or four nos.
  */
 export const rungClass = (r: TRoundLike | undefined): string => {
   if (!r) return 'off';
@@ -219,3 +314,18 @@ export const rungClass = (r: TRoundLike | undefined): string => {
 
 /** Only the two fields the class depends on, so this does not import the row. */
 type TRoundLike = { status: TRoundStatus; decision: TDecision };
+
+/**
+ * Ladder order, with retired rungs last.
+ *
+ * `order.indexOf(kind)` returns -1 for a rung no longer on the ladder, which
+ * sorts it *above* round one — so a retired intro round appeared at the top of
+ * the track as though the process began with it.
+ */
+export const byLadder =
+  (order: TStoredRoundKind[]) =>
+  (a: { kind: TStoredRoundKind }, b: { kind: TStoredRoundKind }): number => {
+    const ia = order.indexOf(a.kind);
+    const ib = order.indexOf(b.kind);
+    return (ia < 0 ? Number.MAX_SAFE_INTEGER : ia) - (ib < 0 ? Number.MAX_SAFE_INTEGER : ib);
+  };

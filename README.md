@@ -9,31 +9,64 @@ and what survives that room is a scorecard filled in twenty minutes later from
 memory. This keeps the meeting link, the script, the scorecard and the
 transcript on the round, next to the call they produced.
 
-## The ladder
+## The two ladders
 
-Four rounds, the same four for everyone.
+Product and visual designers are interviewed differently, by different people,
+against different things — so they are two processes, not one with optional
+rungs. A candidate's `track` decides which they walk, and everyone on a track
+walks all of it.
 
-| # | Round | For | Judges |
-|---|-------|-----|--------|
-| 1 | Portfolio | One project, end to end, in their own words | Craft, Product thinking, Communication |
-| 2 | Whiteboarding & critique | A live problem, then our work put in front of them | Craft, Systems, Communication |
-| 3 | Product | With a PM. Whether they can hold a business problem | Product thinking, Collaboration, Communication |
-| 4 | Culture | Whether they make the people around them better | Ambition, Collaboration |
+**Product design**
 
-It is a fixed list rather than a per-level one: a ladder that varies by band
-means two candidates for the same role are compared on different evidence, and
-the argument at the end is then about who got which rounds rather than about the
-work.
+| # | Round | Who runs it | Judges |
+|---|-------|-------------|--------|
+| 1 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
+| 2 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
+| 3 | AI coding | Arnab | Craft, Systems, Product thinking |
+| 4 | Culture fit | Ayush | Ambition, Collaboration |
+| 5 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
 
-`signals` per round is load-bearing, not decoration. Every interviewer scoring
-every signal produces six averages and no information, because most of them
-were guesses from people who never saw the work. A round can only score what it
-was in a position to see.
+**Visual design**
 
-[`src/lib/ladder.ts`](src/lib/ladder.ts) is the process — the rounds, their
-scripts, and their signals. Editing that file is how the process changes, and
-the app reconciles stored candidates against it on open (see **Retiring a
-round** below).
+| # | Round | Who runs it | Judges |
+|---|-------|-------------|--------|
+| 1 | Portfolio | Sanket / Jithin | Craft, Communication |
+| 2 | Working session | Tamanna | Craft, Collaboration, Communication |
+| 3 | Product round | Rahul | Product thinking, Systems, Communication |
+| 4 | Culture fit | Ayush | Ambition, Collaboration |
+
+`owners` is a default, not a rule: new rounds are pre-assigned to whoever runs
+them, because "Portfolio with Ayaneshu" is how the process is described out loud
+and an unassigned round is one nobody is going to book. The panel on any round
+stays editable.
+
+`signals` is what a round is *qualified* to judge, and it is load-bearing.
+Scoring craft in the culture round is the failure mode it prevents: every
+interviewer scoring every signal produces six averages and no information,
+because most were guesses from people who never saw the work.
+
+Round kinds are prefixed by track and globally unique (`pd_portfolio`,
+`vd_portfolio`) even where two tracks have a round of the same name. A portfolio
+review with Ayaneshu and one with Sanket are different conversations judged
+against different things — distinct ids keep a stored round readable without
+having to look up its candidate, and the moment the two scripts diverge, shared
+ids would have had to be split anyway.
+
+[`src/lib/ladder.ts`](src/lib/ladder.ts) is the process. Editing that file is
+how the process changes, and every shortlisted candidate is reconciled against
+their track's ladder on load (see **Retiring a round** below).
+
+## The Pipeline tab
+
+The process with the funnel on it: each round, its owner, what it judges, its
+script — and how many people are waiting at it, in it, and through it, with the
+yes/no split on the ones that are done. Nothing there is editable, deliberately:
+a pipeline you can edit in place is one that stops matching the rounds anybody
+already ran.
+
+Rounds run on rungs no ladder has any more get their own block at the foot, so a
+retired round is never silently invisible on the one screen that claims to show
+the whole process.
 
 **Live:** https://design-interviews.vercel.app ·
 **Repo:** https://github.com/rjaiswal-design/design-interviews (private)
@@ -77,6 +110,7 @@ one module real identity replaces.
 | `src/components/PasteTranscript.tsx` | The paste, its parse preview, and who-is-the-candidate |
 | `src/components/TranscriptReader.tsx` | The transcript on its own, searchable |
 | `src/components/Board.tsx` | The sheet, by round and by candidate |
+| `src/components/PipelineView.tsx` | The process, with the funnel on it |
 | `src/components/LadderTrack.tsx` | The ladder, full size and at row height |
 | `src/index.css` | Both token systems — see below |
 
@@ -87,7 +121,7 @@ Six states, and one of them changes what exists:
 | State | Means |
 |-------|-------|
 | Yet to be shortlisted | Added or imported. **No rounds yet.** |
-| Shortlisted | In the process. Shortlisting creates all four rounds. |
+| Shortlisted | In the process. Shortlisting creates their track's rounds. |
 | Offer rollout | Offer is out |
 | Hired | Accepted |
 | Offer dropped | Offer lost — they declined, or it was pulled |
@@ -96,7 +130,7 @@ Six states, and one of them changes what exists:
 **Rounds do not exist until somebody is shortlisted.** That is what keeps the
 rounds board a list of conversations someone actually intends to have: import a
 hundred CVs and you get a hundred candidates and zero rounds, shortlist eight
-and thirty-two rounds appear. The transition is one-way — leaving the process
+and their rounds appear. The transition is one-way — leaving the process
 never removes rounds, because by then they are the record of why someone left.
 
 `inProcess()` in [`src/lib/candidateStatus.ts`](src/lib/candidateStatus.ts) is
@@ -123,8 +157,8 @@ repeated down the page to say so.
 
 The ladder column is that candidate's ladder at row height, with this row's
 round drawn thicker. Each segment opens its round, so from any row you can see where
-the person stands across all four and jump to any of them — strictly more than
-the button did.
+the person stands across their whole track and jump to any of them — strictly
+more than the button did.
 
 There is no date column. The Latest column already carries a time — "Soumya
 Nair · 2 days ago" — and a date beside it was saying the same thing twice. The
@@ -198,6 +232,14 @@ an honest convenience rather than a claim.
 The ladder is a list in source, not rows in the database, so changing it leaves
 every stored candidate out of step. `load()` reconciles them: rounds for a newly
 added rung appear, and empty rounds for a dropped rung go.
+
+**Renaming is not retiring.** When the single four-rung ladder became the
+product-design track, its kinds were *renamed* forward (`portfolio` →
+`pd_portfolio`) in `hydrateRound`, not retired — they are the same conversations
+under the same names. Retiring them would have littered every existing
+candidate with four unreadable rounds *and* five new empty ones. `intro`,
+`craft`, `systems` and `bar` stay genuinely retired, because no current rung
+means what they meant.
 
 **A round that actually happened is never deleted.** If it has a call, a
 write-up, a transcript or a recording, it is kept, marked `retired`, and shown
@@ -280,6 +322,7 @@ understood:
 | source | channel, via, referrer, referral |
 | status | stage, state |
 | ref | id, candidate id, application id |
+| track | discipline, ladder, pipeline, team, craft |
 | phone | mobile, tel, telephone, contact number |
 | company | current employer, employer, organisation, org |
 | their title | job title, title, current role, designation |

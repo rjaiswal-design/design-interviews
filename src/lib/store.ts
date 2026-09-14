@@ -84,13 +84,19 @@ const stamp = <T extends { updatedAt: number }>(row: T): T => ({ ...row, updated
 
 /** A blank round on a rung. One factory, because three paths create them and a
  *  field added to the row otherwise has to be remembered in all three. */
-const blankRound = (candidateId: string, rung: { kind: TRound['kind']; durationMin: number }): TRound => {
+const blankRound = (
+  candidateId: string,
+  rung: { kind: TRound['kind']; durationMin: number; owners: string[] },
+): TRound => {
   const now = Date.now();
   return {
     id: newId('round'),
     candidateId,
     kind: rung.kind,
-    interviewers: [],
+    // Pre-assigned to whoever runs this round. "Portfolio with Ayaneshu" is how
+    // the process is described out loud, and an unassigned round is one nobody
+    // is going to book. Editable on the round like any other panel.
+    interviewers: [...rung.owners],
     scheduledAt: 0,
     durationMin: rung.durationMin,
     status: 'scheduled',
@@ -164,10 +170,12 @@ export const useStore = create<TState>((set, get) => ({
       // open is what makes editing `lib/ladder.ts` the way the process is
       // changed: rungs that were added appear, empty rounds for rungs that were
       // dropped go, and anything that actually happened is kept.
-      const kinds = new Set(ladderFor().map((r) => r.kind));
       const drifted = candidates.filter((c) => {
+        if (!inProcess(c.status)) return false;
+        const want = new Set(ladderFor(c.track).map((r) => r.kind));
         const mine = rounds.filter((r) => r.candidateId === c.id);
-        return mine.length !== kinds.size || mine.some((r) => !kinds.has(r.kind));
+        // Missing a rung their track has, or holding one it does not.
+        return mine.length < want.size || mine.some((r) => !want.has(r.kind));
       });
       for (const c of drifted) await get().syncLadder(c.id);
     })();
@@ -197,6 +205,7 @@ export const useStore = create<TState>((set, get) => ({
       previousCompany: '',
       previousPosition: '',
       source: '',
+      track: 'product',
       // Added, not shortlisted. Nobody has decided to interview them yet, and
       // that decision is what creates their rounds.
       status: 'pending',
@@ -236,7 +245,11 @@ export const useStore = create<TState>((set, get) => ({
     // Shortlisting is what moves someone into rounds. Entering the process
     // generates the ladder; leaving it again never takes it away, because by
     // then the rounds may be the record of why they left.
-    if (!inProcess(current.status) && inProcess(next.status)) await get().syncLadder(id);
+    const entered = !inProcess(current.status) && inProcess(next.status);
+    // Moving track means a different ladder. The rounds of the old one are
+    // kept if anything happened in them — see the stale rule in `syncLadder`.
+    const switched = patch.track !== undefined && patch.track !== current.track;
+    if (entered || switched) await get().syncLadder(id);
   },
 
   removeCandidate: async (id) => {
@@ -281,10 +294,10 @@ export const useStore = create<TState>((set, get) => ({
     // Someone nobody has shortlisted has no rounds — not four empty ones. The
     // rounds board is a list of conversations somebody intends to have, and a
     // hundred imported CVs would otherwise put four hundred rows on it.
-    const want = inProcess(cand.status) ? ladderFor() : [];
+    const want = inProcess(cand.status) ? ladderFor(cand.track) : [];
 
     const missing = want.filter((rung) => !have.some((r) => r.kind === rung.kind));
-    const added = missing.map((rung) => blankRound(candidateId, rung));
+    const added = missing.map((rung) => blankRound(candidateId, rung as Parameters<typeof blankRound>[1]));
 
     // A round whose rung is no longer on the ladder is only removed if nothing
     // ever happened in it. Changing the process must not delete a conversation

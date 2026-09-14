@@ -6,6 +6,8 @@ import {
   SCORE_LABELS,
   SIGNAL_LABELS,
   STATUS_LABELS,
+  TRACKS,
+  TRACK_LABELS,
   byLadder,
   isRetired,
   ladderFor,
@@ -19,6 +21,7 @@ import type {
   TCandidateStatus,
   TDecision,
   TRound,
+  TTrack,
   TRoundStatus,
   TSegment,
 } from '../types';
@@ -71,9 +74,9 @@ const CandidatePanel = ({
 
   /** In ladder order, not insertion order — the track is meaningless otherwise. */
   const ordered = useMemo(() => {
-    const order = ladderFor().map((r) => r.kind);
+    const order = ladderFor(candidate.track).map((r) => r.kind);
     return [...rounds].sort(byLadder(order));
-  }, [rounds]);
+  }, [rounds, candidate.track]);
 
   /** Every starred line across every round of this candidate. The one view that
    *  answers "what actually happened in these conversations" without reading
@@ -149,7 +152,10 @@ const CandidatePanel = ({
               <h3>Not shortlisted yet</h3>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: 'var(--prism-text-secondary)' }}>
                 Nobody has decided to interview {candidate.name || 'this candidate'} yet, so they
-                have no rounds. Shortlisting them creates all four.
+                have no rounds. Shortlisting them creates the{' '}
+                {ladderFor(candidate.track).length} rounds of the{' '}
+                {TRACK_LABELS[candidate.track].toLowerCase()} ladder, each assigned to whoever runs
+                it.
               </p>
               <div className="row-acts">
                 <button
@@ -181,6 +187,26 @@ const CandidatePanel = ({
                   placeholder="Full name"
                   onBlur={(e) => void patchCandidate(candidate.id, { name: e.target.value })}
                 />
+              </dd>
+
+              <dt>Track</dt>
+              <dd>
+                {/* Changing this changes which ladder they walk. `syncLadder`
+                    adds the new track's rungs and drops the old track's empty
+                    ones; anything that actually happened is kept. */}
+                <select
+                  className="field"
+                  value={candidate.track}
+                  onChange={(e) =>
+                    void patchCandidate(candidate.id, { track: e.target.value as TTrack })
+                  }
+                >
+                  {TRACKS.map((t) => (
+                    <option key={t} value={t}>
+                      {TRACK_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
               </dd>
 
               <dt>Applying for</dt>

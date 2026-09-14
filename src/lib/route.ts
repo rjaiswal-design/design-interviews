@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
  *
  *   #/rounds                 the board, by round
  *   #/people                 the board, by candidate
+ *   #/pipeline               the process, with the funnel on it
  *   #/c/<candidateId>        the panel, over whichever board you were on
  *   #/room/<roundId>         the interview room
  *   #/t/<roundId>            the transcript
@@ -19,6 +20,7 @@ import { useEffect, useState } from 'react';
 export type TRoute =
   | { view: 'rounds' }
   | { view: 'people' }
+  | { view: 'pipeline' }
   | { view: 'candidate'; id: string }
   | { view: 'room'; id: string }
   | { view: 'transcript'; id: string };
@@ -26,6 +28,7 @@ export type TRoute =
 export const parse = (hash: string): TRoute => {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'people') return { view: 'people' };
+  if (parts[0] === 'pipeline') return { view: 'pipeline' };
   if (parts[0] === 'c' && parts[1]) return { view: 'candidate', id: parts[1] };
   if (parts[0] === 'room' && parts[1]) return { view: 'room', id: parts[1] };
   if (parts[0] === 't' && parts[1]) return { view: 'transcript', id: parts[1] };
@@ -36,6 +39,8 @@ export const href = (r: TRoute): string => {
   switch (r.view) {
     case 'people':
       return '#/people';
+    case 'pipeline':
+      return '#/pipeline';
     case 'candidate':
       return `#/c/${r.id}`;
     case 'room':

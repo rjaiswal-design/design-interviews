@@ -12,8 +12,35 @@
  * transcript is two hundred kilobytes of text that none of those reads want.
  */
 
-/** The rungs, in order. Four, and everyone walks all four — see `lib/ladder.ts`. */
-export type TRoundKind = 'portfolio' | 'critique' | 'product' | 'culture';
+/**
+ * Which process a candidate walks.
+ *
+ * Product and visual design are interviewed differently — different rounds,
+ * different people, different things being judged — so they are different
+ * ladders rather than one ladder with optional rungs. See `lib/ladder.ts`.
+ */
+export type TTrack = 'product' | 'visual';
+
+/**
+ * The rungs, across both tracks.
+ *
+ * Prefixed by track and globally unique, even where two tracks have a round of
+ * the same name: a portfolio review with Ayaneshu and one with Sanket are
+ * different conversations, judged against different things, by different
+ * people. Distinct ids keep a stored round unambiguous without having to look
+ * up its candidate's track to read it — and the moment the two scripts diverge,
+ * which they will, shared ids would have had to be split anyway.
+ */
+export type TRoundKind =
+  | 'pd_portfolio'
+  | 'pd_critique'
+  | 'pd_ai_coding'
+  | 'pd_culture'
+  | 'pd_product'
+  | 'vd_portfolio'
+  | 'vd_working'
+  | 'vd_product'
+  | 'vd_culture';
 
 /**
  * Rungs the process used to have.
@@ -76,6 +103,8 @@ export type TCandidate = {
   /** The number people say out loud. Global, and never reused. */
   ref: number;
   name: string;
+  /** Which ladder they walk. Decides their rounds and who runs them. */
+  track: TTrack;
   /**
    * The opening they are up for — "Product Designer, noonFood".
    *
