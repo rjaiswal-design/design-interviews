@@ -26,7 +26,7 @@ walks all of it.
 | 4 | AI coding | Arnab | Craft, Systems, Product thinking |
 | 5 | Culture fit | Ayush | Ambition, Collaboration |
 | 6 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
-| 7 | Offer rollout | Rahul | — |
+| 7 | Offer rollout | Aanchal & Rahul | — |
 
 **Visual design** — 7 rounds, 5h 45m
 
@@ -38,7 +38,7 @@ walks all of it.
 | 4 | Working session | Tamanna | Craft, Collaboration, Communication |
 | 5 | Product round | Rahul | Product thinking, Systems, Communication |
 | 6 | Culture fit | Ayush | Ambition, Collaboration |
-| 7 | Offer rollout | Rahul | — |
+| 7 | Offer rollout | Aanchal & Rahul | — |
 
 The **HR round** comes first so scope, level, market and money are said out loud
 before anyone spends an hour on a portfolio.

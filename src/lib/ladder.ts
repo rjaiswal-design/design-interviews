@@ -184,9 +184,9 @@ const PRODUCT: TRung[] = [
     no: 7,
     label: 'Offer rollout',
     purpose:
-      'The hiring manager makes the offer. Not an assessment — the decision is already made, and this is the conversation that lands it.',
+      'Aanchal and the hiring manager make the offer together. Not an assessment — the decision is already made, and this is the conversation that lands it.',
     durationMin: 30,
-    owners: ['Rahul'],
+    owners: ['Aanchal', 'Rahul'],
     track: 'product',
     // Nothing to score. The outcome of this round is the candidate's status —
     // offer rollout, then hired or offer dropped — not a mark out of four, and
@@ -325,9 +325,9 @@ const VISUAL: TRung[] = [
     no: 7,
     label: 'Offer rollout',
     purpose:
-      'The hiring manager makes the offer. Not an assessment — the decision is already made, and this is the conversation that lands it.',
+      'Aanchal and the hiring manager make the offer together. Not an assessment — the decision is already made, and this is the conversation that lands it.',
     durationMin: 30,
-    owners: ['Rahul'],
+    owners: ['Aanchal', 'Rahul'],
     track: 'visual',
     // Nothing to score. The outcome of this round is the candidate's status —
     // offer rollout, then hired or offer dropped — not a mark out of four, and
