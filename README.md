@@ -58,15 +58,24 @@ their track's ladder on load (see **Retiring a round** below).
 
 ## The Pipeline tab
 
-The process with the funnel on it: each round, its owner, what it judges, its
-script — and how many people are waiting at it, in it, and through it, with the
-yes/no split on the ones that are done. Nothing there is editable, deliberately:
-a pipeline you can edit in place is one that stops matching the rounds anybody
-already ran.
+The two processes, drawn as the sequences they are: vertical and numbered on a
+rail, each step showing the round, its owner, how long it takes and what it is
+allowed to judge. A hiring loop is an order, and the shape and order is the one
+thing a reader should take from this screen.
 
-Rounds run on rungs no ladder has any more get their own block at the foot, so a
-retired round is never silently invisible on the one screen that claims to show
-the whole process.
+It carried live counts and the full scripts and both were the wrong things
+here. Counts belong on the boards, where you can act on the row they describe;
+a script is forty lines of prompt that buried the shape, and it lives where it
+is used — on the round itself. What is left is the process, plus how much of a
+candidate's day each track costs, which is worth knowing before adding a sixth
+round.
+
+Nothing there is editable, deliberately: a pipeline you can edit in place is
+one that stops matching the rounds anybody already ran.
+
+Rounds run on rungs no ladder has any more get their own section at the foot, so
+a retired round is never silently invisible on the one screen that claims to
+show the whole process.
 
 **Live:** https://design-interviews.vercel.app ·
 **Repo:** https://github.com/rjaiswal-design/design-interviews (private)

@@ -2,71 +2,52 @@ import { useMemo } from 'react';
 import { LADDERS, SIGNAL_LABELS, TRACKS, TRACK_LABELS, rung } from '../lib/ladder';
 import { go } from '../lib/route';
 import { useStore } from '../lib/store';
-import { inProcess } from '../lib/candidateStatus';
 import type { TRound, TTrack } from '../types';
 
 /**
- * The process itself, with the funnel sitting on it.
+ * The process, drawn as the two pipelines it is.
  *
- * Two jobs, and it needs both to earn a tab. On its own, the ladder is
- * documentation — the rounds, who runs them, what each is allowed to judge —
- * and documentation of a process belongs where the process is defined, which is
- * `lib/ladder.ts`. What makes this a *pipeline* is the numbers: how many people
- * are sitting at each round right now, and how the calls at that round have
- * gone. That is the question a hiring manager opens a tool to ask, and neither
- * the rounds board nor the candidates list answers it — one is a list of
- * conversations and the other a list of people.
+ * Vertical and numbered, on a rail: a hiring loop is a sequence, and the one
+ * thing a reader needs to take from this screen is its shape and order. A grid
+ * of cards showed the same rounds and made them look like a set of options.
  *
- * Everything here is derived. There is nothing to edit on this screen, which is
- * deliberate: the way to change the process is to change `lib/ladder.ts`, and a
- * pipeline you can edit in place is one that stops matching the rounds anybody
- * already ran.
+ * Deliberately no live numbers and no scripts. It carried both and they were
+ * the wrong things here — counts belong on the boards, where you can act on
+ * the row they describe, and a script is forty lines of prompt that buried the
+ * shape this screen exists to show. The scripts live where they are used, on
+ * the round itself.
+ *
+ * Nothing here is editable either. The way to change the process is to change
+ * `lib/ladder.ts`; a pipeline you can edit in place is one that stops matching
+ * the rounds anybody already ran.
  */
 
-type TRungStats = {
-  waiting: number;
-  live: number;
-  done: number;
-  yes: number;
-  no: number;
+const hours = (mins: number): string => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
 };
 
 const PipelineView = () => {
-  const candidates = useStore((s) => s.candidates);
   const rounds = useStore((s) => s.rounds);
 
-  /** Rounds belonging to somebody actually in the process, indexed by rung.
-   *  A scheduled round on a rejected candidate is not pipeline. */
-  const stats = useMemo(() => {
-    const live = new Set(candidates.filter((c) => inProcess(c.status)).map((c) => c.id));
-    const m = new Map<string, TRungStats>();
-    const bump = (r: TRound) => {
-      if (!live.has(r.candidateId)) return;
-      const s = m.get(r.kind) ?? { waiting: 0, live: 0, done: 0, yes: 0, no: 0 };
-      if (r.status === 'scheduled') s.waiting += 1;
-      if (r.status === 'in_progress') s.live += 1;
-      if (r.status === 'complete') {
-        s.done += 1;
-        if (r.decision === 'yes' || r.decision === 'strong_yes') s.yes += 1;
-        if (r.decision === 'no' || r.decision === 'strong_no') s.no += 1;
-      }
-      m.set(r.kind, s);
-    };
-    for (const r of rounds) bump(r);
-    return m;
-  }, [candidates, rounds]);
-
-  const perTrack = useMemo(() => {
+  /** Total candidate time per track — a fact about the process, not a metric
+   *  about the funnel. "The product loop is four and a half hours of their
+   *  day" is the sort of thing worth knowing before adding a sixth round. */
+  const totals = useMemo(() => {
     const m = new Map<TTrack, number>();
-    for (const c of candidates) {
-      if (!inProcess(c.status)) continue;
-      m.set(c.track, (m.get(c.track) ?? 0) + 1);
+    for (const t of TRACKS) {
+      m.set(
+        t,
+        LADDERS[t].reduce((sum, r) => sum + r.durationMin, 0),
+      );
     }
     return m;
-  }, [candidates]);
+  }, []);
 
-  /** Rounds still off any ladder, so a retired round is not silently invisible
-   *  on the one screen that claims to show the whole process. */
+  /** Rounds still sitting on rungs no ladder has, so a retired round is not
+   *  silently invisible on the one screen that claims to show the process. */
   const retired = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of rounds) {
@@ -79,110 +60,79 @@ const PipelineView = () => {
   return (
     <div className="sheet-wrap wrap">
       <div className="sheet pipeline">
-        {TRACKS.map((track) => (
-          <section className="track-block" key={track}>
-            <header className="track-head">
-              <h2>{TRACK_LABELS[track]}</h2>
-              <span className="track-count">
-                {LADDERS[track].length} rounds · {perTrack.get(track) ?? 0} in the pipeline
-              </span>
-            </header>
+        <div className="pipes">
+          {TRACKS.map((track) => (
+            <section className="pipe" key={track}>
+              <header className="track-head">
+                <h2>{TRACK_LABELS[track]}</h2>
+                <span className="track-count">
+                  {LADDERS[track].length} rounds · {hours(totals.get(track) ?? 0)} of their time
+                </span>
+              </header>
 
-            <div className="rungs">
-              {LADDERS[track].map((r) => {
-                const s = stats.get(r.kind);
-                return (
-                  <article className="rung-card" key={r.kind}>
-                    <div className="rung-card-head">
-                      <span className="no">{r.no}</span>
-                      <h3>{r.label}</h3>
-                      <span className="mins">{r.durationMin}m</span>
-                    </div>
+              <ol className="flow">
+                {LADDERS[track].map((r) => (
+                  <li className="step" key={r.kind}>
+                    <span className="node u-circle">{r.no}</span>
+                    <div className="step-body">
+                      <div className="step-head">
+                        <h3>{r.label}</h3>
+                        <span className="mins">{r.durationMin}m</span>
+                      </div>
 
-                    <p className="who-runs">
-                      {r.owners.length > 0 ? (
-                        r.owners.map((o, i) => (
-                          <span key={o}>
-                            {i > 0 && <span className="or"> / </span>}
-                            <span className="owner">{o}</span>
+                      <p className="who-runs">
+                        {r.owners.length > 0 ? (
+                          r.owners.map((o, i) => (
+                            <span key={o}>
+                              {i > 0 && <span className="or"> / </span>}
+                              <span className="owner">{o}</span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="unassigned">Nobody assigned</span>
+                        )}
+                      </p>
+
+                      <p className="purpose">{r.purpose}</p>
+
+                      <div className="signals">
+                        {r.signals.map((sig) => (
+                          <span className="sig-tag" key={sig}>
+                            {SIGNAL_LABELS[sig]}
                           </span>
-                        ))
-                      ) : (
-                        <span className="unassigned">Nobody assigned</span>
-                      )}
-                    </p>
-
-                    <p className="purpose">{r.purpose}</p>
-
-                    <div className="signals">
-                      {r.signals.map((sig) => (
-                        <span className="sig-tag" key={sig}>
-                          {SIGNAL_LABELS[sig]}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* The numbers that make this a pipeline rather than a
-                        description of one. Zeroes are drawn quiet rather than
-                        hidden: "nobody is waiting on the AI round" is a fact,
-                        and a missing row reads as a broken query. */}
-                    <dl className="rung-stats">
-                      <div className={s?.waiting ? '' : 'nil'}>
-                        <dt>Waiting</dt>
-                        <dd>{s?.waiting ?? 0}</dd>
-                      </div>
-                      <div className={s?.live ? 'now' : 'nil'}>
-                        <dt>Now</dt>
-                        <dd>{s?.live ?? 0}</dd>
-                      </div>
-                      <div className={s?.done ? '' : 'nil'}>
-                        <dt>Done</dt>
-                        <dd>{s?.done ?? 0}</dd>
-                      </div>
-                      <div className={s?.done ? '' : 'nil'}>
-                        <dt>Yes / no</dt>
-                        <dd>
-                          {s?.yes ?? 0} / {s?.no ?? 0}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    <details className="script">
-                      <summary>The script · {r.prompts.length}</summary>
-                      <ul>
-                        {r.prompts.map((p) => (
-                          <li key={p}>{p}</li>
                         ))}
-                      </ul>
-                    </details>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
 
         {retired.length > 0 && (
-          <section className="track-block">
+          <section className="pipe pipe--retired">
             <header className="track-head">
               <h2>Off the ladder</h2>
               <span className="track-count">
-                Rounds run on a rung the process no longer has. Kept because they happened.
+                Run on rungs the process no longer has. Kept because they happened.
               </span>
             </header>
-            <div className="rungs">
+            <ol className="flow">
               {retired.map(([kind, n]) => (
-                <article className="rung-card rung-card--retired" key={kind}>
-                  <div className="rung-card-head">
-                    <span className="no">—</span>
-                    <h3>{rung(kind as TRound['kind']).label}</h3>
+                <li className="step step--retired" key={kind}>
+                  <span className="node u-circle">—</span>
+                  <div className="step-body">
+                    <div className="step-head">
+                      <h3>{rung(kind as TRound['kind']).label}</h3>
+                    </div>
+                    <p className="purpose">
+                      {n} round{n === 1 ? '' : 's'} on record. Nothing new is scheduled on it.
+                    </p>
                   </div>
-                  <p className="purpose">
-                    {n} round{n === 1 ? '' : 's'} on record. Nothing new is scheduled on it.
-                  </p>
-                </article>
+                </li>
               ))}
-            </div>
+            </ol>
           </section>
         )}
 

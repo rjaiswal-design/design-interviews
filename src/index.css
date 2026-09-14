@@ -2120,25 +2120,36 @@ pre.sample {
 }
 
 /* ── the pipeline ───────────────────────────────────────────────────────────
-   The process with the funnel on it: one block per track, one card per round.
-   Cards rather than a table because a round is not one fact — it is an owner,
-   a purpose, what it judges, four numbers and a script, and a table row cannot
-   hold that without becoming a paragraph in a cell. */
+   The process, drawn as the two sequences it is. Vertical and numbered on a
+   rail, because a hiring loop is an order and that is the one thing a reader
+   should take from this screen — a grid of cards showed the same rounds and
+   made them look like a set of options.
+
+   Same rail as the activity trail, at a larger size: the app already uses that
+   shape to mean "these things happened in this order". */
 .pipeline {
   display: flex;
   flex-direction: column;
   gap: var(--prism-gap-section);
-  padding-block: 4px 48px;
+  padding-block: 4px 56px;
 }
 
-.track-block {
+/* Side by side, so the two processes can be compared rather than scrolled
+   between. One column under 900px, where two would be 300px wide each. */
+.pipes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--prism-gap-section) 48px;
+  align-items: start;
+}
+
+.pipe {
   display: flex;
   flex-direction: column;
   gap: var(--prism-gap-stack);
+  min-inline-size: 0;
 }
 
-/* The track's name sits on a rule that runs the width of its cards, so two
-   blocks on one page read as two processes rather than one long list. */
 .track-head {
   display: flex;
   flex-wrap: wrap;
@@ -2160,60 +2171,93 @@ pre.sample {
   color: var(--prism-text-tertiary);
 }
 
-/* Auto-fit rather than a fixed count: four product rounds and five visual ones
-   should not force two different grids, and the cards are readable anywhere
-   between one and four across. */
-.rungs {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+/* ── the flow ───────────────────────────────────────────────────────────── */
+
+.flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.rung-card {
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 14px;
+  padding-block-end: 22px;
+}
+
+/* The rail is drawn by the step above it, so the last round has no line
+   running off the end of the process. */
+.step::before {
+  content: "";
+  position: absolute;
+  inset-block: 26px 0;
+  inset-inline-start: 12px;
+  inline-size: 2px;
+  background: var(--prism-line);
+}
+
+.step:last-child { padding-block-end: 0; }
+.step:last-child::before { display: none; }
+
+/* The number is the node. Solid ink, because every round on the ladder is
+   equally real — this is the process, not a candidate's progress through it. */
+.step .node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 999px;
+  background: var(--prism-ink);
+  color: var(--prism-on-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.step--retired .node {
+  background: var(--prism-bg);
+  color: var(--prism-muted);
+  box-shadow: inset 0 0 0 2px var(--prism-line);
+}
+
+.step-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border: 1px solid var(--prism-line);
-  border-radius: var(--prism-r-2);
-  padding: 14px;
-  background: var(--prism-bg);
+  gap: 7px;
+  min-inline-size: 0;
+  /* Optically level with the middle of its node rather than its top edge. */
+  padding-block-start: 3px;
 }
 
-.rung-card--retired {
-  background: var(--prism-panel);
-  border-style: dashed;
-}
-
-.rung-card-head {
+.step-head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
 }
 
-.rung-card-head .no {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--prism-muted-2);
-}
-
-.rung-card-head h3 {
+.step-head h3 {
   flex: 1;
   min-inline-size: 0;
-  font-size: var(--prism-fs-meta);
+  font-size: var(--prism-fs-body);
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--prism-ink);
 }
 
-.rung-card-head .mins {
+.step-head .mins {
+  flex: none;
   font-size: var(--prism-fs-label);
   font-variant-numeric: tabular-nums;
   color: var(--prism-text-tertiary);
 }
 
-/* Who runs it, in the ink. It is the second thing anyone reads on this screen
-   after the round's name — "Portfolio with Ayaneshu" is how the process is
-   described out loud. */
+/* Who runs it, in the ink and directly under the name — "Portfolio with
+   Ayaneshu" is how the process is described out loud, so the two belong
+   together before anything explaining the round. */
 .who-runs {
   margin: 0;
   font-size: var(--prism-fs-meta);
@@ -2224,17 +2268,12 @@ pre.sample {
   color: var(--prism-ink);
 }
 
-.who-runs .or {
-  color: var(--prism-muted-2);
-}
+.who-runs .or { color: var(--prism-muted-2); }
+.who-runs .unassigned { color: var(--color-fail); }
 
-.who-runs .unassigned {
-  color: var(--color-fail);
-}
-
-.rung-card .purpose {
+.step-body .purpose {
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.55;
   color: var(--prism-text-secondary);
 }
@@ -2243,6 +2282,7 @@ pre.sample {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  margin-block-start: 1px;
 }
 
 .sig-tag {
@@ -2256,79 +2296,7 @@ pre.sample {
   color: var(--prism-text-tertiary);
 }
 
-/* Four numbers on one rule. Tabular, because they are read down a column of
-   cards and ragged digits make two 1s look like different widths. */
-.rung-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  /* Pushed to the foot of the card, so the numbers line up across a row of
-     cards whose purposes are different lengths. Grid already makes the cards
-     equal height; this makes the contents agree. */
-  margin: 2px 0 0;
-  margin-block-start: auto;
-  padding-block-start: 10px;
-  border-block-start: 1px solid var(--prism-line-2);
-}
-
-.rung-stats dt {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--prism-text-tertiary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rung-stats dd {
-  margin: 1px 0 0;
-  font-size: 17px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  color: var(--prism-ink);
-}
-
-/* A zero is a fact, so it is shown — but quietly, or four cards of zeroes
-   out-shout the one number that is moving. */
-.rung-stats .nil dd {
-  color: var(--prism-muted-2);
-}
-
-.rung-stats .now dd {
-  color: var(--color-draft);
-}
-
-/* Collapsed by default. The script is the longest thing on the card and the
-   reason to open this screen is the numbers. */
-.script > summary {
-  cursor: pointer;
-  font-size: var(--prism-fs-label);
-  font-weight: 600;
-  letter-spacing: var(--prism-ls-label);
-  text-transform: uppercase;
-  color: var(--prism-text-tertiary);
-}
-
-.script > summary:hover {
-  color: var(--prism-ink);
-}
-
-.script ul {
-  margin: 10px 0 0;
-  padding-inline-start: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.script li {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--prism-text-secondary);
-}
+.pipe--retired .flow { opacity: 0.85; }
 
 .pipeline-foot {
   margin: 0;
