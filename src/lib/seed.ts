@@ -8,7 +8,6 @@
  * anything.
  */
 
-import { newId } from './id';
 import { inProcess } from './candidateStatus';
 import { DECISION_LABELS, ladderFor } from './ladder';
 import type { TCandidate, TDecision, TEvent, TRound, TRoundStatus, TTrack } from '../types';
@@ -187,6 +186,23 @@ const scoresFor = (decision: TDecision, signals: string[]): Record<string, numbe
   return out;
 };
 
+/**
+ * A stable id from a name, so seeding twice writes the same rows.
+ *
+ * The seed used to mint random ids, which was fine when the board lived in one
+ * browser. Against a shared backend two people opening an empty board both
+ * decide to seed, and random ids would give the team sixteen candidates and
+ * fifty-eight rounds. Deterministic ids make the second seed an upsert over the
+ * first, so the race resolves to the right answer instead of to double.
+ */
+const slug = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+
+const seedId = (prefix: string, ...parts: string[]) => `${prefix}_seed_${parts.map(slug).join('_')}`;
+
 export const buildSeed = (): {
   candidates: TCandidate[];
   rounds: TRound[];
@@ -200,7 +216,7 @@ export const buildSeed = (): {
   const events: TEvent[] = [];
 
   SKETCHES.forEach((sk, i) => {
-    const id = newId('cand');
+    const id = seedId('cand', sk.name);
     candidates.push({
       id,
       ref: 101 + i,
@@ -229,7 +245,7 @@ export const buildSeed = (): {
 
     ladderFor(sk.track).forEach((r, j) => {
       const step = sk.progress[j];
-      const roundId = newId('round');
+      const roundId = seedId('round', sk.name, r.kind);
       rounds.push({
         id: roundId,
         candidateId: id,
@@ -262,7 +278,7 @@ export const buildSeed = (): {
       // every upcoming round's "scheduled" line in the future, which sorted
       // them above things that had actually occurred.
       events.push({
-        id: newId('ev'),
+        id: seedId('ev', sk.name, r.kind, 'scheduled'),
         candidateId: id,
         roundId,
         t: Math.min(at - 2 * DAY, now - (6 * HOUR + i * HOUR + j * 17 * 60_000)),
@@ -272,7 +288,7 @@ export const buildSeed = (): {
       });
       if (step.status === 'complete') {
         events.push({
-          id: newId('ev'),
+          id: seedId('ev', sk.name, r.kind, 'called'),
           candidateId: id,
           roundId,
           t: at + r.durationMin * 60_000,
@@ -285,7 +301,7 @@ export const buildSeed = (): {
       }
       if (step.status === 'cancelled') {
         events.push({
-          id: newId('ev'),
+          id: seedId('ev', sk.name, r.kind, 'cancelled'),
           candidateId: id,
           roundId,
           t: at,
@@ -297,7 +313,7 @@ export const buildSeed = (): {
     });
 
     events.push({
-      id: newId('ev'),
+      id: seedId('ev', sk.name, 'added'),
       candidateId: id,
       roundId: '',
       t: now - (30 - i) * DAY,
@@ -308,7 +324,7 @@ export const buildSeed = (): {
 
     if (sk.status === 'offer_out') {
       events.push({
-        id: newId('ev'),
+        id: seedId('ev', sk.name, 'offer'),
         candidateId: id,
         roundId: '',
         t: now - 6 * DAY,
@@ -319,7 +335,7 @@ export const buildSeed = (): {
     }
     if (sk.status === 'rejected') {
       events.push({
-        id: newId('ev'),
+        id: seedId('ev', sk.name, 'rejected'),
         candidateId: id,
         roundId: '',
         t: now - 9 * DAY,

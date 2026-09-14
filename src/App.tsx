@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { initials } from './lib/format';
 import { known, me } from './lib/me';
+import { backend } from './lib/supabase';
 import { go, useRoute } from './lib/route';
 import { useStore } from './lib/store';
 import AsciiMesh from './components/AsciiMesh';
@@ -23,6 +24,7 @@ import { Plus, Upload } from './components/Icons';
 
 const App = () => {
   const ready = useStore((s) => s.ready);
+  const error = useStore((s) => s.error);
   const load = useStore((s) => s.load);
   const candidates = useStore((s) => s.candidates);
   const rounds = useStore((s) => s.rounds);
@@ -76,6 +78,33 @@ const App = () => {
       <div className="app">
         <div className="wrap" style={{ paddingTop: 40, color: 'var(--color-muted)' }}>
           Opening the record…
+        </div>
+      </div>
+    );
+  }
+
+  // A backend that refused. Said out loud with the reason, because an empty
+  // board and a broken one look identical and only one of them is worth
+  // waiting out.
+  if (error) {
+    return (
+      <div className="app">
+        <div className="wrap" style={{ paddingTop: 40, maxWidth: 'var(--prism-prose)' }}>
+          <h1 style={{ fontSize: 28, marginBottom: 12 }}>The record did not open</h1>
+          <p className="notice" style={{ marginBottom: 16 }}>{error}</p>
+          <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--color-muted)' }}>
+            {backend() === 'supabase'
+              ? 'This board is on Supabase. If the message mentions a row-level security policy, the tables exist but nothing is allowed to write to them yet — apply supabase/migrations/0002_open_access.sql.'
+              : 'This board is in this browser. Clearing site data for localhost:5240 will reset it.'}
+          </p>
+          <button
+            type="button"
+            className="btn"
+            style={{ marginTop: 20 }}
+            onClick={() => window.location.reload()}
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -179,6 +208,16 @@ const App = () => {
             <span className="av av--bar u-circle">{initials(who.name) || '?'}</span>
             {who.name || 'Who are you?'}
           </button>
+
+          {/* Which board this is. Shown only when it is *not* the shared one:
+              being told "you are on the real board" on every screen is noise,
+              but not being told you are looking at your own browser is how
+              somebody writes up an interview nobody else ever sees. */}
+          {backend() === 'local' && (
+            <span className="bar-badge" title="No Supabase project configured — this board lives in this browser only">
+              Local only
+            </span>
+          )}
 
           <button type="button" className="bar-btn" onClick={() => setImporting(true)}>
             <Upload />

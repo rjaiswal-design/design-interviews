@@ -19,7 +19,7 @@
  */
 
 import { create } from 'zustand';
-import { db } from './db';
+import { backend, db } from './db';
 import { buildSeed } from './seed';
 import { newId } from './id';
 import { ladderFor } from './ladder';
@@ -46,6 +46,17 @@ let loading: Promise<void> | null = null;
 
 type TState = {
   ready: boolean;
+  /**
+   * What went wrong loading the board, if anything.
+   *
+   * New with the backend. IndexedDB could not really fail — it is in the same
+   * process — so `load()` never had a failure path and a rejection left the app
+   * on "Opening the record…" for ever with an unhandled promise behind it. A
+   * network call can fail for a dozen ordinary reasons (no policy, no project,
+   * no wifi) and every one of them has to be readable, because "the tool is
+   * broken" and "the tool is empty" look identical otherwise.
+   */
+  error: string;
   candidates: TCandidate[];
   rounds: TRound[];
   /** The whole log, newest first. Small — a few dozen lines per candidate —
@@ -54,6 +65,9 @@ type TState = {
   events: TEvent[];
 
   load: () => Promise<void>;
+  /** The body of `load`, split out so the guard above it owns the one
+   *  try/catch rather than the whole thing being wrapped in an indent. */
+  loadInner: () => Promise<void>;
 
   addCandidate: (partial?: Partial<TCandidate>) => Promise<string>;
   patchCandidate: (id: string, patch: Partial<TCandidate>) => Promise<void>;
@@ -131,6 +145,7 @@ const toEvents = (candidateId: string, roundId: string, whats: string[]): TEvent
 
 export const useStore = create<TState>((set, get) => ({
   ready: false,
+  error: '',
   candidates: [],
   rounds: [],
   events: [],
@@ -139,13 +154,34 @@ export const useStore = create<TState>((set, get) => ({
     if (loading) return loading;
 
     loading = (async () => {
+      try {
+        await get().loadInner();
+      } catch (e) {
+        // Cleared so a retry is possible: a failed load must not leave the
+        // guard holding a rejected promise every later caller awaits.
+        loading = null;
+        set({ ready: true, error: e instanceof Error ? e.message : String(e) });
+      }
+    })();
+
+    return loading;
+  },
+
+  loadInner: async () => {
+    {
       let [candidates, rounds] = await Promise.all([db.candidates.all(), db.rounds.all()]);
       const events = await db.events.all();
 
-      // Seeded on the flag, not on emptiness: a board someone deliberately
-      // cleared must stay cleared. The flag is set before the writes are
-      // awaited so nothing that arrives mid-seed decides to seed again.
-      if (!localStorage.getItem(SEED_FLAG) && candidates.length === 0) {
+      // Seeded only into an empty board.
+      //
+      // On IndexedDB the flag is what makes a board somebody deliberately
+      // cleared stay cleared. On Supabase the flag is per-browser and therefore
+      // meaningless for shared data — the second person to open an empty board
+      // has no flag — so emptiness of the *server* is the only sensible test,
+      // and the seed's ids are deterministic so two people seeding at once
+      // resolve to one board rather than two. See `seedId` in `seed.ts`.
+      const wants = backend() === 'supabase' || !localStorage.getItem(SEED_FLAG);
+      if (wants && candidates.length === 0) {
         localStorage.setItem(SEED_FLAG, '1');
         const seed = buildSeed();
         await Promise.all([
@@ -178,9 +214,7 @@ export const useStore = create<TState>((set, get) => ({
         return mine.length < want.size || mine.some((r) => !want.has(r.kind));
       });
       for (const c of drifted) await get().syncLadder(c.id);
-    })();
-
-    return loading;
+    }
   },
 
   note: async (candidateId, roundId, what) => {

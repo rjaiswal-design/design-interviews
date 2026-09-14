@@ -345,53 +345,82 @@ A column nothing maps to is reported rather than dropped silently, and an
 unparseable date leaves the round unscheduled rather than landing it on an
 invented day. Imports add; nothing already on the board is touched.
 
-## Wiring it to Supabase
+## The backend
 
-The schema is [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-— four tables mirroring the four object stores, RLS on all of them, and the
-activity log enforced append-only. Apply it with:
+Two implementations behind one shape, chosen at module load in
+[`src/lib/db.ts`](src/lib/db.ts):
+
+- **Supabase** ([`dbSupabase.ts`](src/lib/dbSupabase.ts)) when
+  `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Shared board.
+- **IndexedDB** ([`dbLocal.ts`](src/lib/dbLocal.ts)) when they are not. Own
+  browser. The bar says **Local only** in amber, because not being told you are
+  looking at your own browser is how somebody writes up an interview nobody
+  else ever sees.
+
+Nothing above `db.ts` knows which. The store already treated every call as
+async and already refetched after a write, so the network round-trip changed no
+caller.
+
+### Applying the schema
 
 ```bash
 psql "$SUPABASE_DB_URL" -f supabase/migrations/0001_init.sql
+psql "$SUPABASE_DB_URL" -f supabase/migrations/0002_open_access.sql
 ```
 
-It ends with a query that should return four tables, `rls = t`, and six
-policies.
+Or paste them into the SQL editor. Each ends with a query that says whether it
+landed. `0002` is what makes the tables writable without auth — without it every
+write comes back `42501 new row violates row-level security policy`, and the app
+says so with the reason rather than hanging.
 
-**Auth has to come first.** Every policy is gated on `is_team()` — a signed-in
-`@noon.com` address — so until Supabase Auth is wired the tables read as empty
-for everyone. That is the correct failure direction: the anon key ships inside a
-JavaScript bundle on a public URL, so it is an identifier rather than a secret,
-and RLS is the only thing between that URL and every candidate's phone number
-and every interview transcript.
+### Three shapes that genuinely differ
 
-Then [`src/lib/db.ts`](src/lib/db.ts) — the only file that knows where data
-lives. Nothing above it changes: the store already treats every call as async
-and already refetches after a write, so a network round-trip changes no caller.
-Six differences to handle in that file:
+Not just spelling. The mapping lives in `dbSupabase.ts` and nowhere else.
 
-| App | Postgres |
-|-----|----------|
-| `camelCase` | `snake_case` |
-| `TSegment.text` | `segments.body` — `text` as a column name beside a type called `text` reads badly |
-| `scheduledAt: 0` | `scheduled_at: null` — unscheduled is a real state, not 1970 |
-| `roundId: ''` | `events.round_id: null` |
-| `ref` from `max(ref) + 1` | a sequence default — the client-side version races two people adding at once |
-| `removeCandidate` deletes events by hand | the `on delete cascade` does it, and the append-only policy forbids the manual delete |
+| TS | Postgres | Why |
+|----|----------|-----|
+| `segment.text` | `segments.body` | `text` beside a type called `text` reads badly |
+| `scheduledAt: 0` | `scheduled_at: null` | unscheduled is a state, not 1970 |
+| `event.roundId: ''` | `events.round_id: null` | "about the candidate, not a round" |
 
-`updated_at` is set by a trigger, so the value the app sends is ignored. A
-timestamp a client can choose is a timestamp a client can get wrong.
+`ref` now comes from a Postgres sequence rather than `max(ref) + 1`, which
+raced two people adding a candidate at once. `updated_at` is set by a trigger,
+so the value the app sends is ignored — a timestamp a client can choose is one
+it can get wrong. `removeCandidate` no longer deletes events by hand: the
+cascade does it, and the append-only policy would refuse anyway.
 
-Realtime is on for `candidates`, `rounds` and `events` — without it two people
-on the board do not see each other's changes until one reloads, which is most of
-the way back to the per-browser version. `segments` is left out deliberately: a
-transcript arrives as one paste of a few hundred rows, and broadcasting each of
-them says nothing that one refetch of `line_count` does not.
+### Seeding a shared board
+
+Seed row ids are deterministic (`cand_seed_noor_al_hashimi`). On IndexedDB a
+localStorage flag kept a deliberately-cleared board clear; on Supabase that flag
+is per-browser and meaningless for shared data — the second person to open an
+empty board has no flag — so emptiness of the *server* is the test, and matching
+ids make two simultaneous seeds resolve to one board instead of two.
+
+### Security, as it actually stands
+
+Auth is deliberately not wired, so `0002` grants the `anon` role full access.
+The anon key ships inside a JavaScript bundle on a public URL: it is an
+identifier, not a secret. **Anyone who finds the deployed site can read and
+write every row — candidate names, phone numbers, email addresses and complete
+interview transcripts — from outside noon and without signing in.** Fine for the
+fictional seed; worth revisiting before real candidates go in, since it is their
+data.
+
+RLS stays *enabled* with policies that read `using (true)` rather than being
+switched off, so closing it is a swap of five policies and nothing else. The
+reverse of `0002` is written out at the top of that file, and `is_team()` is
+already in the database waiting for it.
+
+Note: this Supabase project is shared with the **live RnR poll** (`votes`, 51
+rows). The migrations drop only this app's four tables by name for that reason —
+`drop schema public cascade` would have taken it out.
 
 ## What this does not do yet
 
-- **No shared backend.** Everything is in this browser's IndexedDB, so the
-  record is per-machine. `db.ts` is the seam for fixing that — see above.
+- **No auth.** See above — the deployed board is world-readable and
+  world-writable. `is_team()` and the policy swap are ready; what is missing is
+  a sign-in.
 - **Nothing fetches the transcript for you.** Somebody has to download it from
   the meeting and paste it in. A Zoom API integration would remove that step and
   is the obvious next thing; the parser already handles what Zoom exports.
