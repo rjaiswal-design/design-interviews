@@ -71,7 +71,10 @@ the whole process.
 **Live:** https://design-interviews.vercel.app ·
 **Repo:** https://github.com/rjaiswal-design/design-interviews (private)
 
-Pushes to `main` deploy automatically.
+Pushes to `main` deploy automatically. `vercel.json` marks `/assets/*`
+immutable for a year — Vite fingerprints those filenames, so a given URL's
+bytes never change and a new build is a new name. `index.html` keeps Vercel's
+`must-revalidate` default, which is what picks up a new build.
 
 ## Running it
 
