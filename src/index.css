@@ -1,0 +1,2120 @@
+/* ---------------------------------------------------------------------------
+   Design language taken from the MP team tools — Prism (prism.noon.team) for
+   the chrome, the Sentinel scale for the board.
+
+   Two systems live in this file on purpose, exactly as they do in
+   mp-inspect-team's stylesheet, and the token names match that file so the
+   three stay diffable:
+
+     --prism-*   the app bar, cards, the side panel, menus. One divider colour,
+                 two radii (2px controls / 4px surfaces), black as the only
+                 emphasis accent, colour reserved for status.
+     --color-*   the sheet and everything on a row — 14px body, 999px pills,
+                 the five-step two-layer shadow scale.
+
+   Interleaved property by property there would be no telling which system a
+   value belongs to, and no way to retune either one.
+   --------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Geist Sans";
+  src: url("../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The display face. Square terminals carry a 40px page title and turn to mush
+   at card-heading size, so nothing under 20px is set in it. */
+@font-face {
+  font-family: "Geist Pixel Square";
+  src: url("../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Square.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ── Layers ──────────────────────────────────────────────────────────────
+     Every overlay in the app, in the order it must paint. Named, because a
+     z-index only competes with its siblings: any element that both sets one
+     and contains a menu has to be above whatever that menu must cover. */
+  --z-sheet-head: 30;
+  --z-table-head: 20;
+  --z-topbar: 40;
+  --z-popover: 50;
+  --z-panel: 60;
+  --z-dialog: 110;
+  --z-picker: 130;
+
+  --font-sans:
+    "Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-pixel: "Geist Pixel Square", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion — the built-in easings are too weak; these are the app's defaults. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur: 180ms;
+
+  /* ── Sentinel: the board ─────────────────────────────────────────────── */
+  --color-bg: #ffffff;
+  --color-card: #ffffff;
+  --color-ink: #18191d;
+  --color-muted: #76798a;
+  --color-line: #ededec;
+  --color-line-strong: #e3e3e0;
+
+  --color-draft: #9a6a12;
+  --color-draft-bg: #fbf3e3;
+  --color-open: #15803d;
+  --color-open-bg: #eaf7ee;
+  --color-closed: #76798a;
+  --color-closed-bg: #f2f2f1;
+
+  /* Blue is reserved: it means "you chose this" and nothing else. No status
+     borrows it — not even a yes. */
+  --color-pick: #2f62d8;
+  --color-pick-bg: #eff3fd;
+
+  --color-fail: #dc2626;
+  --color-fail-bg: #fef2f2;
+
+  /* Elevation — five steps, every one two layers: a short tight shadow where
+     the object nearly touches the page, and a long soft ambient one. The border
+     still does the work; the shadow only says which side of it is nearer. */
+  --shadow-raise: 0 1px 2px -1px rgb(20 20 20 / 0.03), 0 3px 10px -8px rgb(20 20 20 / 0.06);
+  --shadow-float: 0 1px 2px -1px rgb(20 20 20 / 0.04), 0 6px 16px -12px rgb(20 20 20 / 0.1);
+  --shadow-pop: 0 1px 2px -1px rgb(20 20 20 / 0.04), 0 10px 26px -14px rgb(20 20 20 / 0.13);
+  --shadow-panel: 0 2px 5px -3px rgb(20 20 20 / 0.05), 0 16px 44px -28px rgb(20 20 20 / 0.18);
+  --shadow-dialog: 0 2px 6px -3px rgb(20 20 20 / 0.05), 0 22px 56px -30px rgb(20 20 20 / 0.2);
+
+  /* ── Prism: the chrome ───────────────────────────────────────────────── */
+  --prism-bg: #ffffff;
+  --prism-panel: #f7f7f8;
+  --prism-tint: #f7f7f8;
+  --prism-ink: #131315;
+  --prism-ink-2: #3d3d42;
+  --prism-muted: #71717a;
+  --prism-muted-2: #9d9da5;
+  --prism-line: #ebebed;
+  --prism-line-2: #f2f2f4;
+  --prism-on-ink: #ffffff;
+
+  /* The text ramp, which is not the grey ramp above. Prism's greys are drawn
+     for lines — #9d9da5 is 2.7:1 on white and #71717a clears AA by 0.33. These
+     two are the text tones; keep the greys above for rules, borders and marks. */
+  --prism-text-secondary: #5b5b63; /* 6.7:1 */
+  --prism-text-tertiary: #6e6e77; /* 5.0:1 — the lightest step still over AA */
+
+  /* Status, and only status — a chip is the one place colour is allowed. */
+  --prism-red: #b42318;
+  --prism-red-bg: #fef3f2;
+  --prism-amber: #b54708;
+  --prism-amber-bg: #fffaeb;
+  --prism-green: #067647;
+  --prism-green-bg: #ecfdf3;
+
+  /* Two radii, and only two: r-1 for controls, chips and badges; r-2 for cards
+     and surfaces. */
+  --prism-r-1: 2px;
+  --prism-r-2: 4px;
+
+  --prism-col: 1240px;
+  --prism-prose: 720px;
+
+  /* Every control in a filter bar is this tall, so the row reads level. */
+  --prism-control-h: 32px;
+  --prism-nav-h: 57px;
+
+  /* Vertical rhythm. Every stack is a flex column that owns the space between
+     its own children, so nothing is spaced by a margin — one container, one
+     number, and no collapsing to reason about when a piece is added. */
+  --prism-gap-section: 40px;
+  --prism-gap-block: 18px;
+  --prism-gap-stack: 16px;
+  --prism-gap-line: 12px;
+  --prism-gap-hair: 5px;
+
+  /* The dropdown panel. Square, because hanging an OS-rounded popup off a 2px
+     control is the one thing that does not look drawn by us. */
+  --prism-menu-radius: 0;
+  --prism-menu-shadow: 0 1px 2px rgb(19 19 21 / 0.05), 0 10px 28px rgb(19 19 21 / 0.1);
+
+  --prism-fs-h1: 40px;
+  --prism-fs-h2: 32px;
+  --prism-fs-h3: 22px;
+  --prism-fs-body: 16px;
+  --prism-fs-meta: 14px;
+  --prism-fs-label: 12px;
+  --prism-lh-body: 1.65;
+  --prism-ls-label: 0.07em;
+
+  --prism-panel-w: 620px;
+}
+
+html {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Figma-style corner smoothing on every rounded element. Progressive
+   enhancement: browsers without `corner-shape` render normal rounding. */
+*,
+*::before,
+*::after {
+  corner-shape: superellipse(4);
+}
+
+/* Opt-out for the few things that must be a true circle — a status dot, an
+   avatar. On a square with a full radius the smoothing renders a squircle. */
+.u-circle {
+  corner-shape: round;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1 {
+  font-family: var(--font-pixel);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+h2,
+h3 {
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+.shadow-raise { box-shadow: var(--shadow-raise); }
+.shadow-float { box-shadow: var(--shadow-float); }
+.shadow-pop { box-shadow: var(--shadow-pop); }
+
+/* ── app shell ───────────────────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.wrap {
+  width: 100%;
+  padding: 0 16px;
+}
+
+@media (min-width: 640px) {
+  .wrap {
+    padding: 0 24px;
+  }
+}
+
+/* The table owns the vertical scroll, not the document: a sticky `th` resolves
+   against its nearest scroll container, and the sheet is already one. Bounded
+   height it is — the masthead and the filters stay put and the column captions
+   ride the top of the rows. */
+.main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── the app bar ─────────────────────────────────────────────────────────────
+   Solid rather than a translucent blur: the bar is a boundary, and the page
+   sliding visibly under it is what the border is for. */
+.topbar {
+  flex: none;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar);
+  border-bottom: 1px solid var(--prism-line);
+  background: var(--prism-bg);
+}
+
+.topbar-in {
+  display: flex;
+  height: var(--prism-nav-h);
+  inline-size: 100%;
+  padding-inline: 24px;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Nothing in the bar wraps. A button whose label breaks onto two lines is
+   taller than the row it is in, and the row is a fixed height — so the label
+   overflows its own bar. The name field is the only flexible thing here and
+   takes all the squeeze. */
+.topbar-in > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.topbar-in .field {
+  flex: 0 1 148px;
+  min-inline-size: 72px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--prism-fs-meta);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--prism-ink);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+/* Square, at the crumb's own height. Prism's mark is a chip, not a badge. */
+.brand .mark {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  width: 22px;
+  border-radius: var(--prism-r-1);
+  background: var(--prism-ink);
+  color: var(--prism-on-ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand .tag {
+  margin-inline-start: 4px;
+  border-radius: var(--prism-r-1);
+  background: var(--prism-line-2);
+  padding: 2px 6px;
+  font-size: var(--prism-fs-label);
+  font-weight: 500;
+  color: var(--prism-muted);
+}
+
+.rule-v {
+  height: 20px;
+  width: 1px;
+  flex: none;
+  background: var(--prism-line);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Prism marks the active nav item with an underline, not a filled pill — so the
+   tab is text, and the only thing that changes is its colour. */
+.nav-tab {
+  position: relative;
+  display: flex;
+  height: var(--prism-nav-h);
+  align-items: center;
+  white-space: nowrap;
+  font-size: var(--prism-fs-meta);
+  font-weight: 500;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--prism-muted);
+  transition: color var(--dur) var(--ease-out);
+}
+
+.nav-tab:hover {
+  color: var(--prism-ink-2);
+}
+
+.nav-tab.on {
+  color: var(--prism-ink);
+}
+
+/* Square and on the bar's own bottom edge: the underline is part of the border
+   it interrupts, not a floating bar under it. */
+.nav-tab .underline {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--prism-ink);
+}
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--color-ink);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  transition:
+    opacity var(--dur) var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.98); }
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Quiet on purpose: there is one on every row, and a column of filled buttons
+   is a column of shouting. */
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  border: 0;
+  background: rgb(0 0 0 / 0.045);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+  transition:
+    background var(--dur) var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.btn-quiet:hover { background: rgb(0 0 0 / 0.08); }
+.btn-quiet:active { transform: scale(0.98); }
+
+.btn-quiet.danger:hover {
+  background: var(--color-fail-bg);
+  color: var(--color-fail);
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  width: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-muted);
+  transition:
+    background var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: rgb(0 0 0 / 0.05);
+  color: var(--color-ink);
+}
+
+/* The bar's controls, in Prism. Scoped rather than global: .btn is the sheet's
+   primary action, and this is the chrome above it — not the app entire.
+   Height and inline padding only; the label is centred by the flex box it is
+   already in, and padding-set heights put the pair on neither the same top
+   edge nor the same bottom one. */
+.topbar .btn,
+.bar-btn {
+  height: var(--prism-control-h);
+  padding-block: 0;
+  padding-inline: 13px;
+  border: 1px solid var(--prism-line);
+  border-radius: var(--prism-r-1);
+  background: var(--prism-bg);
+  font-size: var(--prism-fs-meta);
+  font-weight: 500;
+  color: var(--prism-ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition:
+    background var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.topbar .btn:hover,
+.bar-btn:hover {
+  opacity: 1;
+  background: var(--prism-tint);
+  border-color: var(--prism-muted-2);
+}
+
+.bar-btn:active { transform: scale(0.98); }
+
+/* The identity chip's avatar: the row avatar at control height. */
+.av--bar {
+  display: grid;
+  place-items: center;
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 999px;
+  background: var(--prism-ink);
+  color: var(--prism-on-ink);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Links styled as bar buttons — the meeting link is an anchor, because it
+   leaves the app and should behave like it (middle-click, copy, open in a new
+   tab all have to work). */
+a.bar-btn { text-decoration: none; }
+
+.bar-note {
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-text-tertiary);
+}
+
+.bar-btn.on {
+  background: var(--prism-ink);
+  border-color: var(--prism-ink);
+  color: var(--prism-on-ink);
+}
+
+.topbar .icon-btn {
+  height: var(--prism-control-h);
+  width: var(--prism-control-h);
+  border-radius: var(--prism-r-1);
+  color: var(--prism-text-tertiary);
+}
+
+.topbar .icon-btn:hover {
+  background: var(--prism-line-2);
+  color: var(--prism-ink);
+}
+
+/* ── page head ───────────────────────────────────────────────────────────── */
+
+.pagehead {
+  position: relative;
+  margin-inline: -16px;
+  padding-inline: 16px;
+  overflow: hidden;
+  padding-bottom: 32px;
+  padding-top: 28px;
+}
+
+@media (min-width: 640px) {
+  .pagehead {
+    margin-inline: -24px;
+    padding-inline: 24px;
+  }
+}
+
+.pagehead-grid {
+  position: relative;
+  display: grid;
+  align-items: center;
+  column-gap: 32px;
+}
+
+@media (min-width: 640px) {
+  .pagehead-grid.has-action {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.pagehead h1 {
+  grid-column-start: 1;
+  min-width: 0;
+  font-size: var(--prism-fs-h1);
+  line-height: 1.05;
+}
+
+.pagehead .action {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .pagehead .action {
+    grid-column-start: 2;
+    /* Row 1 is the title now that the eyebrow above it is gone. */
+    grid-row-start: 1;
+    margin-top: 0;
+    justify-self: end;
+  }
+}
+
+/* The character field. A rectangle of characters ending in a hard line is a
+   border drawn in text, so the whole stack is masked out before any edge. */
+.mesh {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.mesh pre {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  user-select: none;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.14em;
+}
+
+/* ── the funnel band ─────────────────────────────────────────────────────────
+   Four counts above the board. Numbers, not a chart: at this size a chart is a
+   decoration and the number is the fact. */
+.band {
+  grid-column-start: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  /* Straight under the title now that the standfirst is gone, so it owns the
+     gap the paragraph used to provide. */
+  margin-top: 22px;
+}
+
+.band .fact .n {
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.band .fact .k {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-muted);
+}
+
+/* ── filter chips ────────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 20px;
+}
+
+.chip {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+  background: rgb(0 0 0 / 0.04);
+  color: var(--color-ink);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.chip:hover { background: rgb(0 0 0 / 0.07); }
+.chip[data-open="true"] { background: rgb(0 0 0 / 0.08); }
+
+/* Active: a ring rather than a dot. Three marks for one boolean is two too
+   many, and the label already says it out loud. */
+.chip[data-active="true"] {
+  background: rgb(0 0 0 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(24 25 29 / 0.2);
+}
+
+.chip:focus-visible { box-shadow: 0 0 0 2px rgb(24 25 29 / 0.25); }
+
+.chip .k {
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.chip .v { font-weight: 600; }
+
+.chip .caret {
+  color: var(--color-muted);
+  transition: transform 200ms var(--ease-out);
+  display: flex;
+}
+
+.chip[data-open="true"] .caret { transform: rotate(180deg); }
+
+.menu-wrap {
+  position: relative;
+}
+
+.popover {
+  position: absolute;
+  top: 100%;
+  z-index: var(--z-popover);
+  margin-top: 6px;
+  max-height: 320px;
+  min-width: 220px;
+  overflow-y: auto;
+  border-radius: 14px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  padding: 4px;
+  box-shadow: var(--shadow-pop);
+}
+
+.popover.right { right: 0; }
+
+.popover button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.popover button:hover { background: rgb(0 0 0 / 0.04); }
+.popover button[aria-checked="true"] { font-weight: 600; }
+
+.popover .tick {
+  display: grid;
+  width: 14px;
+  flex: none;
+  place-items: center;
+  color: var(--color-pick);
+}
+
+.popover .n {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+.popover .sep {
+  height: 1px;
+  background: var(--color-line);
+  margin: 4px 0;
+}
+
+.popover button.danger:hover { color: var(--color-fail); }
+
+/* The menu that drops out of the bar. Square-cornered like Prism's own
+   dropdown — a 14px panel hanging off a 2px button is the mismatch the native
+   select popup had. */
+.topbar .popover {
+  border-radius: var(--prism-r-2);
+  border-color: var(--prism-line);
+  background: var(--prism-bg);
+  box-shadow: var(--prism-menu-shadow);
+}
+
+.topbar .popover button {
+  border-radius: var(--prism-r-1);
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-ink-2);
+}
+
+.topbar .popover button:hover {
+  background: var(--prism-tint);
+  color: var(--prism-ink);
+}
+
+/* ── search ──────────────────────────────────────────────────────────────── */
+
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+}
+
+.search input {
+  width: 100%;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  background: rgb(0 0 0 / 0.04);
+  padding: 0 32px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-ink);
+  outline: none;
+  transition: background var(--dur) var(--ease-out);
+}
+
+.search input:hover { background: rgb(0 0 0 / 0.07); }
+
+.search input:focus {
+  background: rgb(0 0 0 / 0.07);
+  box-shadow: 0 0 0 2px rgb(24 25 29 / 0.25);
+}
+
+.search input::placeholder { color: var(--color-muted); }
+
+.search .icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  pointer-events: none;
+  display: flex;
+}
+
+.search .clear {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  padding: 4px;
+  line-height: 0;
+  border-radius: 999px;
+}
+
+.search .clear:hover { color: var(--color-ink); }
+
+/* A problem stated once above the table, so it is visible without hunting for
+   the flagged cell. */
+.notice {
+  margin: 0 0 16px;
+  border-radius: 12px;
+  background: var(--color-fail-bg);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-fail);
+}
+
+.notice.calm {
+  background: var(--color-closed-bg);
+  color: var(--color-muted);
+}
+
+/* ── the board ───────────────────────────────────────────────────────────── */
+
+/* The gutter-bearing parent. It is the flex child that grows; `.sheet` inside
+   it is the thing that scrolls, which is what lets the column captions stick. */
+.sheet-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pulled 12px into the gutter and padded 12px back, so the row hover band
+   extends past the content while the columns stay on the gutter with the
+   filter row and the page title. */
+.sheet {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-inline: -12px;
+  padding-inline: 12px;
+  padding-bottom: 24px;
+}
+
+table.log {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  /* A floor width, so the columns that hold a pill or a date keep their size
+     and the sheet scrolls sideways rather than crushing them. */
+  min-width: 1180px;
+}
+
+/* A column heading: small caps over hairline-separated rows. `nowrap` because a
+   caption that wraps has outgrown its column. */
+.log thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-table-head);
+  background: var(--color-bg);
+  text-align: left;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  /* Top padding is load-bearing, not rhythm: the cell background is the only
+     thing hiding the rows sliding under a sticky header. */
+  padding: 14px 12px 10px;
+  box-shadow: inset 0 -1px 0 var(--color-line);
+}
+
+.log tbody td {
+  border-bottom: 1px solid var(--color-line);
+  padding: 10px 12px;
+  vertical-align: middle;
+  transition: background var(--dur) var(--ease-out);
+}
+
+/* The hover tint has room inside it: the content is inset rather than the row
+   narrowed, so the band is the full width of the table. */
+.log tbody tr:hover td { background: rgb(0 0 0 / 0.02); }
+.log tbody tr:hover td:first-child { border-radius: 14px 0 0 14px; }
+.log tbody tr:hover td:last-child { border-radius: 0 14px 14px 0; }
+
+.log tbody tr.live td { background: var(--color-draft-bg); }
+.log tbody tr.live:hover td { background: #f7ecd6; }
+
+.col-ref { width: 60px; }
+.col-who { width: auto; min-width: 240px; }
+.col-rung { width: 190px; }
+.col-panel { width: 170px; }
+.col-role { width: auto; min-width: 180px; }
+/* Takes what the fixed columns leave. It holds a sentence, and everything
+   either side of it is a name, a date or a button and can be sized exactly. */
+.col-act-log { width: auto; min-width: 260px; }
+.col-ladder { width: 112px; }
+
+.cell-ref {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+/* Name over role: two lines, and the role is the quiet one, so the column scans
+   as a list of people rather than as a paragraph. */
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.who .av {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  width: 30px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--prism-panel);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--prism-text-secondary);
+}
+
+/* A block, and its two lines are blocks: they are spans in the markup — one
+   button cannot contain a div — so the stack has to be declared here or the
+   name and the role set as one run of text. */
+.who .lines {
+  min-width: 0;
+  display: block;
+}
+
+.who .nm {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.who:hover .nm { text-decoration: underline; }
+
+.who .rl {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The round cell, which is the way into the round. A quiet target: the whole
+   cell reacts, and the label is the same text it always was — a button that
+   announces itself in a column of forty is a column of announcements. */
+.rung-open {
+  display: block;
+  inline-size: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+
+.rung-open:hover .lb { text-decoration: underline; }
+
+.rung-cell .lb {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.when-cell .abs {
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.when-cell .rel {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.panel-cell {
+  font-size: 13px;
+  color: var(--color-ink);
+}
+
+.panel-cell .none { color: var(--color-muted); }
+
+/* A phone number is one token, not a sentence: wrapped after the area code it
+   stops being a number you can read or dial. `nowrap` also gives the column a
+   content minimum, so it cannot be squeezed by the two auto-width columns
+   beside it — the table grows and the sheet scrolls, which it already does. */
+.cell-phone {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A link that does not announce itself until you are on it. There is one in
+   every row of the candidates table, and a column of blue underlines reads as
+   a column of warnings. */
+.quiet-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.quiet-link:hover {
+  color: var(--color-pick);
+  text-decoration: underline;
+}
+
+/* ── status pill: a dot and a word in the state's tint ───────────────────── */
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 0;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  white-space: nowrap;
+  transition: filter var(--dur) var(--ease-out);
+}
+
+.pill:hover { filter: brightness(0.97); }
+
+.pill .dot {
+  height: 6px;
+  width: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: currentColor;
+  corner-shape: round;
+}
+
+.pill select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Two enums, one palette. Blue stays reserved for "you chose this", so no
+   status borrows it — a yes is green because it passed, not because it is
+   selected.
+
+   Round status runs scheduled → in progress → complete → cancelled: ink for a
+   real queue item, amber for the one happening now, green for done, and the
+   closed grey for the one that will not happen. */
+.s-scheduled { color: var(--color-ink); background: rgb(0 0 0 / 0.06); }
+.s-in_progress { color: var(--color-draft); background: var(--color-draft-bg); }
+.s-complete { color: var(--color-open); background: var(--color-open-bg); }
+.s-cancelled { color: var(--color-closed); background: var(--color-closed-bg); }
+
+/* The call. Four points and no midpoint. `pending` is the absence of an answer
+   so it is the quietest; strong no takes the fail red and strong yes is drawn
+   with a ring as well as a fill, because it is the one value that is a claim
+   about the bar rather than about the candidate. */
+.s-pending { color: var(--color-closed); background: var(--color-closed-bg); }
+.s-strong_no { color: var(--color-fail); background: var(--color-fail-bg); }
+.s-no { color: var(--color-draft); background: var(--color-draft-bg); }
+.s-yes { color: var(--color-open); background: var(--color-open-bg); }
+.s-strong_yes {
+  color: var(--color-open);
+  background: var(--color-open-bg);
+  box-shadow: inset 0 0 0 1px rgb(21 128 61 / 0.35);
+}
+
+/* The funnel.
+   `pending` is the absence of a decision, so it is drawn as an outline — set
+   aside rather than ranked, the same treatment the retired priority used.
+   `shortlisted` takes the ink: it is the only state that means work is owed.
+   Colour then tracks the ending — amber while an offer is in the air, green
+   and solid for the one terminal success, red for the offer that got away,
+   and the closed grey for a rejection, which is a normal outcome and should
+   not read as a failure of the system. */
+.s-pending {
+  color: var(--color-muted);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+}
+.s-pending .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.s-shortlisted { color: var(--color-ink); background: rgb(0 0 0 / 0.06); }
+.s-offer_out { color: var(--color-draft); background: var(--color-draft-bg); }
+.s-hired { color: #fff; background: var(--color-open); }
+.s-hired .dot { background: #fff; }
+.s-offer_dropped { color: var(--color-fail); background: var(--color-fail-bg); }
+.s-rejected { color: var(--color-closed); background: var(--color-closed-bg); }
+
+/* ── the latest-activity cell ───────────────────────────────────────────────
+   A row of the trail at row height: the sentence on top, who and when under
+   it. The whole cell is the button — a link inside a cell gives a target the
+   width of its text, and the text here is a sentence of unpredictable length. */
+.latest {
+  display: block;
+  inline-size: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  min-inline-size: 0;
+}
+
+.latest .what {
+  display: block;
+  font-size: 13.5px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latest:hover .what { text-decoration: underline; }
+
+.latest .who {
+  display: block;
+  font-size: 12px;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latest-none {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+/* ── the trail ──────────────────────────────────────────────────────────────
+   A sequence, drawn as one. The connecting rule is what says so, and it is
+   drawn by the entry above it so the last one has no tail hanging off the end
+   of the list. */
+.trail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trail li {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding-bottom: 18px;
+}
+
+.trail li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  bottom: 0;
+  width: 1px;
+  background: var(--prism-line);
+}
+
+.trail li:last-child { padding-bottom: 0; }
+.trail li:last-child::before { display: none; }
+
+.trail .node {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin-top: 5px;
+  height: 9px;
+  width: 9px;
+  border-radius: 999px;
+  background: var(--prism-bg);
+  box-shadow: inset 0 0 0 2px var(--prism-muted-2);
+}
+
+/* The newest entry is the one being read, so it is the only one drawn solid. */
+.trail li:first-child .node {
+  background: var(--prism-ink);
+  box-shadow: none;
+}
+
+.trail .body { min-width: 0; }
+
+.trail .what {
+  margin: 0;
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-ink);
+}
+
+.trail-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.trail-link:hover { text-decoration: underline; }
+
+.trail .when {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--prism-text-tertiary);
+}
+
+/* The exact timestamp is the thing you want only once you have found the line,
+   so it is held back until the line is under the cursor. */
+.trail .exact {
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+.trail li:hover .exact { opacity: 1; }
+
+
+/* ── the ladder track ───────────────────────────────────────────────────────
+   Four or five rungs, drawn as a row of segments with the connecting rule
+   behind them. It is the one place the whole funnel for one person is visible,
+   so it carries the call on each rung as its fill rather than a legend. */
+.track {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.track .rung {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.track .bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-line);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.track .rung.done .bar { background: var(--color-open); }
+.track .rung.weak .bar { background: var(--color-draft); }
+.track .rung.bad .bar { background: var(--color-fail); }
+.track .rung.now .bar { background: var(--color-draft); }
+.track .rung.off .bar { background: var(--color-line-strong); }
+.track .rung.on .bar { background: var(--color-ink); }
+
+.track .rung .lb {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track .rung.on .lb,
+.track .rung.done .lb { color: var(--color-ink); }
+
+/* The ladder at row height. Four segments; the fill is the call on each round,
+   the same mapping the full track uses.
+
+   On the rounds board these are buttons — each one opens its round, which is
+   what earned the column when the row's "Activity" button came out. They are
+   given a taller transparent hit area than the bar they draw, because a 4px
+   target is not a target. */
+.track-mini {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.track-mini i,
+.track-mini button {
+  display: block;
+  border: 0;
+  padding: 0;
+  inline-size: 18px;
+  block-size: 4px;
+  border-radius: 999px;
+  background: var(--color-line);
+  transition:
+    background var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+
+.track-mini button {
+  /* The hit area, without moving the bars apart: padding would widen the
+     graphic, so the box is grown and the paint kept on the border box. */
+  block-size: 18px;
+  background-clip: content-box;
+  padding-block: 7px;
+  box-sizing: border-box;
+}
+
+/* `background-color`, not the `background` shorthand.
+   The shorthand resets every background sub-property to its initial value,
+   including the `background-clip: content-box` above it — which is what draws
+   these as 4px bars inside an 18px hit area. With the shorthand here, the clip
+   reverted to `border-box` and every segment painted as an 18px block. */
+.track-mini .done { background-color: var(--color-open); }
+.track-mini .weak { background-color: var(--color-draft); }
+.track-mini .bad { background-color: var(--color-fail); }
+.track-mini .now { background-color: var(--color-draft); }
+.track-mini .off { background-color: var(--color-line-strong); }
+
+/* Which round this row is about: a thicker bar, not a second mark beside it.
+   Colour is already carrying the call, so tinting "you are here" would make it
+   and "strong yes" the same signal — and a dot or a rule underneath reads as
+   another object rather than as emphasis on this one. Drawn by shrinking the
+   padding, so the hit area does not move. */
+.track-mini button.here {
+  padding-block: 5px;
+}
+
+.track-mini button:hover {
+  background-color: var(--color-ink);
+}
+
+.track-mini button:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* ── the side panel ─────────────────────────────────────────────────────────
+   Slides in beside the board rather than over it, so the board keeps its
+   scroll. Everything in it is Prism, like the bar above it. */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  display: flex;
+  justify-content: flex-end;
+  /* Lighter than a modal scrim: the board behind is still being read — it is
+     what the panel is about — so this separates rather than hides. */
+  background: rgb(19 19 21 / 0.24);
+  animation: scrim-in var(--dur) var(--ease-out);
+}
+
+@keyframes scrim-in {
+  from { opacity: 0; }
+}
+
+.side-sheet {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(var(--prism-panel-w), 100vw);
+  block-size: 100%;
+  border-inline-start: 1px solid var(--prism-line);
+  background: var(--prism-bg);
+  animation: sheet-in 220ms var(--ease-out);
+}
+
+@keyframes sheet-in {
+  from { transform: translateX(24px); opacity: 0; }
+}
+
+/* Pinned above the scroll, so the person you are reading stays named however
+   far down their history you get. */
+.side-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 0 16px 0 24px;
+  block-size: var(--prism-nav-h);
+  border-block-end: 1px solid var(--prism-line);
+}
+
+.side-sheet-crumb {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-text-secondary);
+}
+
+.side-sheet-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  border: 0;
+  border-radius: var(--prism-r-1);
+  background: none;
+  color: var(--prism-text-tertiary);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.side-sheet-close:hover {
+  background: var(--prism-line-2);
+  color: var(--prism-ink);
+}
+
+.side-sheet-body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prism-gap-section);
+}
+
+/* ── a block in the panel ───────────────────────────────────────────────── */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prism-gap-stack);
+}
+
+.block > h3 {
+  font-size: var(--prism-fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--prism-ls-label);
+  color: var(--prism-text-tertiary);
+}
+
+/* The record: label beside value, two columns, so the eye runs down the labels
+   and reads only the line it wants. */
+.facts {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: var(--prism-gap-line) var(--prism-gap-stack);
+  align-items: center;
+  font-size: var(--prism-fs-meta);
+}
+
+.facts dt {
+  color: var(--prism-text-tertiary);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--prism-ink);
+}
+
+.field {
+  inline-size: 100%;
+  block-size: var(--prism-control-h);
+  padding-inline: 9px;
+  border: 1px solid var(--prism-line);
+  border-radius: var(--prism-r-1);
+  background: var(--prism-bg);
+  font: inherit;
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-ink);
+  outline: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.field:hover { border-color: var(--prism-muted-2); }
+
+.field:focus {
+  border-color: var(--prism-ink);
+  box-shadow: 0 0 0 2px rgb(19 19 21 / 0.08);
+}
+
+textarea.field {
+  block-size: auto;
+  min-block-size: 76px;
+  padding-block: 8px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+/* ── the interview room ─────────────────────────────────────────────────────
+   Full screen, two columns: the script and the scorecard on the left, the
+   transcript as it lands on the right. It takes the whole window because it is
+   the one screen someone is looking at while talking to another human, and a
+   panel over the board would put the board's filters in their eyeline. */
+.room {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  flex-direction: column;
+  background: var(--prism-bg);
+  animation: room-in 200ms var(--ease-out);
+}
+
+@keyframes room-in {
+  from { opacity: 0; transform: scale(0.995); }
+}
+
+.room-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  block-size: var(--prism-nav-h);
+  padding-inline: 20px 16px;
+  border-block-end: 1px solid var(--prism-line);
+}
+
+.room-bar .who-line {
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-bar .who-line .nm {
+  font-size: var(--prism-fs-meta);
+  font-weight: 600;
+  color: var(--prism-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-bar .who-line .sub {
+  font-size: var(--prism-fs-label);
+  color: var(--prism-text-tertiary);
+}
+
+
+
+.room-panes {
+  flex: 1;
+  min-block-size: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+}
+
+@media (max-width: 940px) {
+  .room-panes { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+}
+
+.room-pane {
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prism-gap-section);
+}
+
+.room-pane--script {
+  border-inline-end: 1px solid var(--prism-line);
+}
+
+.room-pane--live {
+  padding: 0;
+  gap: 0;
+  background: var(--prism-bg);
+}
+
+/* ── the script ─────────────────────────────────────────────────────────── */
+
+.purpose {
+  font-size: var(--prism-fs-body);
+  line-height: var(--prism-lh-body);
+  color: var(--prism-ink-2);
+  max-inline-size: var(--prism-prose);
+}
+
+.prompts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* A prompt is a checkbox because the interviewer's problem is not remembering
+   the questions, it is remembering which ones they have already asked while
+   listening to an answer. */
+.prompts li > button {
+  display: flex;
+  inline-size: 100%;
+  gap: 10px;
+  align-items: flex-start;
+  border: 0;
+  border-radius: var(--prism-r-2);
+  background: none;
+  padding: 9px 10px;
+  text-align: left;
+  font-size: var(--prism-fs-meta);
+  line-height: 1.5;
+  color: var(--prism-ink-2);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.prompts li > button:hover { background: var(--prism-tint); }
+
+.prompts .box {
+  flex: none;
+  margin-top: 2px;
+  inline-size: 14px;
+  block-size: 14px;
+  border: 1px solid var(--prism-muted-2);
+  border-radius: var(--prism-r-1);
+  display: grid;
+  place-items: center;
+  color: transparent;
+}
+
+.prompts li.asked .box {
+  background: var(--prism-ink);
+  border-color: var(--prism-ink);
+  color: var(--prism-on-ink);
+}
+
+.prompts li.asked > button {
+  color: var(--prism-text-tertiary);
+  text-decoration: line-through;
+  text-decoration-color: var(--prism-line-strong, var(--prism-muted-2));
+}
+
+/* ── the scorecard ──────────────────────────────────────────────────────── */
+
+.card-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prism-gap-line);
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--prism-gap-stack);
+  align-items: center;
+}
+
+.card-row .sig {
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-ink);
+}
+
+/* Four buttons, not a slider. A slider invites a midpoint and there is no
+   midpoint on this scale. */
+.scale {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.scale button {
+  inline-size: 30px;
+  block-size: 26px;
+  border: 1px solid var(--prism-line);
+  border-radius: var(--prism-r-1);
+  background: var(--prism-bg);
+  font-size: var(--prism-fs-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--prism-text-tertiary);
+  transition:
+    background var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out);
+}
+
+.scale button:hover { border-color: var(--prism-muted-2); }
+
+/* The chosen one takes blue — the one meaning blue has in this system. */
+.scale button[aria-pressed="true"] {
+  background: var(--color-pick-bg);
+  border-color: var(--color-pick);
+  color: var(--color-pick);
+}
+
+/* ── the live transcript ────────────────────────────────────────────────── */
+
+.live-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-block-end: 1px solid var(--prism-line);
+}
+
+.live-head .ttl {
+  font-size: var(--prism-fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--prism-ls-label);
+  color: var(--prism-text-tertiary);
+}
+
+/* The speaker toggle. Two segments, and whichever is lit is who the next line
+   will be attributed to — the recogniser cannot tell, so this is the honest
+   way to say who said something. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--prism-line);
+  border-radius: var(--prism-r-1);
+  overflow: hidden;
+}
+
+.seg button {
+  border: 0;
+  background: var(--prism-bg);
+  padding-inline: 11px;
+  block-size: 26px;
+  font-size: var(--prism-fs-label);
+  font-weight: 500;
+  color: var(--prism-text-secondary);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.seg button + button { border-inline-start: 1px solid var(--prism-line); }
+.seg button:hover { background: var(--prism-tint); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--prism-ink);
+  color: var(--prism-on-ink);
+}
+
+.stream {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: 18px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* A line of transcript. The timestamp is a fixed-width gutter so the text has a
+   left edge to run down, and it is a button because its whole job is to seek. */
+.line {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: var(--prism-r-2);
+  align-items: baseline;
+  transition: background var(--dur) var(--ease-out);
+}
+
+.line:hover { background: var(--prism-tint); }
+
+/* The timestamp gutter. A fixed width so the text has a left edge to run down,
+   and a plain span rather than a button: the transcript is pasted in from the
+   meeting and there is no audio behind it to seek. `·` marks a line whose
+   export carried no timestamp. */
+.line .t {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--prism-muted-2);
+}
+
+.line .tx {
+  font-size: var(--prism-fs-meta);
+  line-height: 1.6;
+  color: var(--prism-ink-2);
+  min-inline-size: 0;
+  cursor: text;
+}
+
+/* Who is speaking is carried by the text's weight and colour, not by a label on
+   every line: a transcript with "Interviewer:" down the left margin is half
+   label by area. The candidate is the ink, because they are the one being read. */
+.line.candidate .tx {
+  color: var(--prism-ink);
+  font-weight: 500;
+}
+
+.line.interviewer .tx {
+  color: var(--prism-text-secondary);
+}
+
+.line.unknown .tx {
+  color: var(--prism-muted);
+  font-style: italic;
+}
+
+.line.starred {
+  background: #fffaeb;
+}
+
+.line.starred:hover { background: #fef3d4; }
+
+/* A line somebody typed rather than one the recogniser heard. Worth marking —
+   a transcript is evidence, and "we wrote this down" and "this was said into a
+   microphone" are different claims — but marked at label size and in the
+   lightest tone that still clears AA, because most lines are not this. */
+.typed {
+  margin-inline-start: 7px;
+  padding-inline: 4px;
+  border-radius: var(--prism-r-1);
+  background: var(--prism-line-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--prism-ls-label);
+  text-transform: uppercase;
+  vertical-align: 1px;
+  color: var(--prism-text-tertiary);
+}
+
+.line .star {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: var(--prism-muted-2);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+
+.line:hover .star,
+.line.starred .star { opacity: 1; }
+.line.starred .star { color: var(--color-draft); }
+.line .star:hover { color: var(--color-draft); }
+
+.line .row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+
+.stream-empty {
+  padding: 40px 8px;
+  font-size: var(--prism-fs-meta);
+  line-height: var(--prism-lh-body);
+  color: var(--prism-text-tertiary);
+  max-inline-size: 46ch;
+}
+
+
+/* ── dialogs ────────────────────────────────────────────────────────────── */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: rgb(24 25 29 / 0.35);
+  backdrop-filter: blur(3px);
+  animation: scrim-in 180ms var(--ease-out);
+}
+
+.dialog {
+  width: min(620px, 100%);
+  max-height: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  box-shadow: var(--shadow-dialog);
+  overflow: hidden;
+}
+
+.dialog header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.dialog header > div { min-width: 0; flex: 1; }
+
+.dialog .eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Sans, not the pixel face: it is a 17px card heading, and the display face
+   turns to mush below 20px. */
+.dialog h2 {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+
+.dialog .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dialog .body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+.dialog .foot {
+  margin: 0;
+  flex: none;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-line);
+  background: rgb(0 0 0 / 0.015);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dialog .foot .note {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.drop {
+  border: 1px dashed var(--color-line-strong);
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--color-muted);
+  transition: border-color var(--dur) var(--ease-out), background var(--dur) var(--ease-out);
+}
+
+.drop.over {
+  border-color: var(--color-pick);
+  background: var(--color-pick-bg);
+  color: var(--color-pick);
+}
+
+textarea.paste {
+  width: 100%;
+  min-height: 140px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-ink);
+  outline: none;
+  resize: vertical;
+}
+
+textarea.paste:focus { border-color: var(--color-ink); }
+
+pre.sample {
+  margin: 0;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--prism-panel);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--prism-text-secondary);
+}
+
+/* ── the moments list ───────────────────────────────────────────────────────
+   What someone starred while it was being said. This is the payoff of the
+   whole transcript: the reason to record is not to re-read forty minutes, it
+   is to get back to the ninety seconds that decided it. */
+.moments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.moment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  border: 0;
+  border-radius: var(--prism-r-2);
+  background: none;
+  padding: 8px 10px;
+  text-align: left;
+  transition: background var(--dur) var(--ease-out);
+}
+
+.moment:hover { background: var(--prism-tint); }
+
+.moment .t {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--prism-muted-2);
+}
+
+.moment .tx {
+  font-size: var(--prism-fs-meta);
+  line-height: 1.55;
+  color: var(--prism-ink-2);
+}
+
+/* ── empty states ───────────────────────────────────────────────────────── */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 64px 12px;
+  max-width: 52ch;
+}
+
+.empty h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+/* ── the round editor rows in the panel ─────────────────────────────────── */
+
+.round-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prism-gap-line);
+  border: 1px solid var(--prism-line);
+  border-radius: var(--prism-r-2);
+  padding: 14px;
+}
+
+.round-card.now { border-color: var(--color-draft); background: #fffdf7; }
+
+.round-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.round-card-head .no {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--prism-muted-2);
+}
+
+.round-card-head .lb {
+  flex: 1;
+  min-inline-size: 0;
+  font-size: var(--prism-fs-meta);
+  font-weight: 600;
+  color: var(--prism-ink);
+}
+
+.round-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .round-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.lbl {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: var(--prism-fs-label);
+  font-weight: 500;
+  color: var(--prism-text-tertiary);
+}
+
+.row-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
