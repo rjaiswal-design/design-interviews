@@ -162,8 +162,8 @@ const App = () => {
       <div className="topbar">
         <div className="topbar-in">
           <button type="button" className="brand" onClick={() => go({ view: 'rounds' })}>
-            <span className="mark">IV</span>
-            Interviews
+            <span className="mark">SC</span>
+            Scout
             <span className="tag">design</span>
           </button>
 
@@ -250,7 +250,7 @@ const App = () => {
                 — both were read once and then permanently in the way. What the
                 masthead is for is the counts. */}
             <div className="pagehead-grid">
-              <h1>The interview record</h1>
+              <h1>Scout</h1>
               <div className="band">
                 {facts.map((f) => (
                   <div className="fact" key={f.k}>

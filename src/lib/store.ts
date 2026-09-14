@@ -22,7 +22,7 @@ import { create } from 'zustand';
 import { backend, db } from './db';
 import { buildSeed } from './seed';
 import { newId } from './id';
-import { ladderFor } from './ladder';
+import { byLadder, ladderFor } from './ladder';
 import { inProcess } from './candidateStatus';
 import { actor, actorEmail } from './me';
 import { candidateEvents, roundEvents } from './events';
@@ -76,6 +76,9 @@ type TState = {
   removeCandidate: (id: string) => Promise<void>;
 
   patchRound: (id: string, patch: Partial<TRound>) => Promise<void>;
+  /** Make a given rung the candidate's current round. See the implementation
+   *  for what that costs — it is not only a change to the round named. */
+  moveToRound: (candidateId: string, kind: TRound['kind']) => Promise<void>;
   /** Brings a candidate's rounds in line with the current ladder. Adds any rung
    *  they are missing and drops one that is no longer on the ladder — but only
    *  if nothing ever happened in it. */
@@ -335,6 +338,53 @@ export const useStore = create<TState>((set, get) => ({
       rounds: s.rounds.map((r) => (r.id === id ? next : r)),
       events: rows.length > 0 ? [...rows, ...s.events] : s.events,
     }));
+  },
+
+  /**
+   * Move somebody to a round.
+   *
+   * "Current" is derived, not stored — `whereNow` on the board reads the first
+   * round that is not finished — so moving somebody is a statement about the
+   * rounds *before* the one named: they are behind them now. Everything earlier
+   * that was still open is marked complete, and the target is reopened.
+   *
+   * That is a real edit to several rounds and it is deliberately not silent:
+   * each one goes through `patchRound`, so the activity log gets a line per
+   * round and anybody reading it later can see that a round was closed by a
+   * move rather than by somebody sitting in it. Skipping ahead is a normal
+   * thing to do and a normal thing to have to explain afterwards.
+   *
+   * Moving backwards costs nothing: the earlier rounds are already complete, so
+   * only the target is reopened. Rounds after it are left exactly as they are.
+   *
+   * Skipped rounds are marked **complete**, not cancelled. Moving somebody past
+   * a round is the assertion that it is behind them; a round that genuinely did
+   * not happen is *cancelled*, which is a different statement and is set on the
+   * round itself. `whereNow` steps over both.
+   *
+   * Sequential rather than `Promise.all`: every write refetches, and firing four
+   * patches at one candidate concurrently races the store's own reload.
+   */
+  moveToRound: async (candidateId, kind) => {
+    const order = ladderFor(
+      get().candidates.find((c) => c.id === candidateId)?.track ?? 'product',
+    ).map((r) => r.kind);
+    const mine = get()
+      .rounds.filter((r) => r.candidateId === candidateId)
+      .sort(byLadder(order));
+
+    const target = mine.find((r) => r.kind === kind);
+    if (!target) return;
+    const at = mine.indexOf(target);
+
+    for (const r of mine.slice(0, at)) {
+      if (r.status === 'scheduled' || r.status === 'in_progress') {
+        await get().patchRound(r.id, { status: 'complete' });
+      }
+    }
+    if (target.status !== 'scheduled') {
+      await get().patchRound(target.id, { status: 'scheduled' });
+    }
   },
 
   syncLadder: async (candidateId) => {

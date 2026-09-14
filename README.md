@@ -1,4 +1,4 @@
-# Interviews
+# Scout
 
 The record of every design interview we run. One row per conversation, with the
 conversation *on* the row rather than described in it: who, which rung, when, the
@@ -211,9 +211,13 @@ for ever. A finished ladder reads **All rounds done · Waiting on a decision**,
 which is a different state from being at the last round and the one place this
 board asks somebody to act. `whereNow()` in `Board.tsx` is the whole rule.
 
-That is also why the round cell carries a status when the Status *column* was
-removed as redundant: with one row each, this column answers the question on its
-own.
+Moving somebody is a statement about the rounds *before* the one picked — they
+are behind them now — so everything earlier that was still open is marked
+**complete** and the target is reopened. Skipped rounds are complete rather than
+cancelled: moving past a round asserts it is behind them, where cancelled says
+it did not happen, and those are different claims. Each round goes through
+`patchRound`, so the log gets a line apiece and anybody reading it later can see
+a round was closed by a move rather than by somebody sitting in it.
 
 **Ladder** is their whole track at row height with the current round drawn
 thicker, and each segment opens its round — so the summary never costs you
