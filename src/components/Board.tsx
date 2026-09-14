@@ -11,7 +11,7 @@ import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, inProcess } from '../lib/c
 import { useStore } from '../lib/store';
 import type { TCandidate, TCandidateStatus, TEvent, TRound, TRoundStatus } from '../types';
 import FilterChip from './FilterChip';
-import { Close, Download, Search } from './Icons';
+import { Caret, Close, Download, Search } from './Icons';
 import { LadderMini } from './LadderTrack';
 import Pill from './Pill';
 
@@ -234,6 +234,38 @@ const Board = ({ mode }: TProps) => {
       );
     });
   }, [candidates, q]);
+
+  /**
+   * Put a candidate at a given round.
+   *
+   * `whereNow` reads the first round that is not finished, so moving somebody
+   * means making that true of the one you picked: everything before it counts
+   * as done, and the target itself is reopened if it had been closed. Moving
+   * backwards therefore works as well as forwards.
+   *
+   * Skipped rounds are marked **complete**, because moving somebody past a
+   * round is the assertion that it is behind them. A round that genuinely did
+   * not happen is *cancelled*, which is a different statement and is set on the
+   * round itself — `whereNow` steps over those too.
+   *
+   * Sequential rather than `Promise.all`: each write refetches, and firing four
+   * patches at one candidate concurrently races the store's own reload.
+   */
+  const moveTo = async (ladder: TRound[], targetId: string) => {
+    const i = ladder.findIndex((r) => r.id === targetId);
+    if (i < 0) return;
+
+    for (const r of ladder.slice(0, i)) {
+      if (r.status === 'scheduled' || r.status === 'in_progress') {
+        await patchRound(r.id, { status: 'complete' });
+      }
+    }
+
+    const target = ladder[i];
+    if (target.status === 'complete' || target.status === 'cancelled') {
+      await patchRound(target.id, { status: 'scheduled' });
+    }
+  };
 
   /** Add one and open it, because a blank row on a board you cannot see is not
    *  a useful outcome of pressing "Add a candidate". */
@@ -496,7 +528,7 @@ const Board = ({ mode }: TProps) => {
                             <span className="sub">Waiting on a decision</span>
                           </span>
                         ) : rg && where.round ? (
-                          <>
+                          <span className="rung-at">
                             <button
                               type="button"
                               className="rung-open"
@@ -505,28 +537,30 @@ const Board = ({ mode }: TProps) => {
                             >
                               <span className="lb">{rg.label}</span>
                             </button>
-                            <span className="rung-foot">
-                              {/* Marking this one complete is what moves them
-                                  on: `whereNow` then names the next round owed
-                                  and the row redraws around it. */}
-                              <Pill<TRoundStatus>
-                                value={where.round.status}
-                                options={ROUND_STATUSES}
-                                labels={STATUS_LABELS}
-                                onChange={(v) =>
-                                  void patchRound(where.round?.id ?? '', { status: v })
-                                }
-                                title="Complete this round to move them to the next"
-                              />
-                              <span className="when">
-                                {where.round.scheduledAt
-                                  ? relative(where.round.scheduledAt)
-                                  : where.round.status === 'scheduled'
-                                    ? 'no date yet'
-                                    : ''}
-                              </span>
+
+                            {/* Move them to a different round. A native select
+                                under a caret, the same trick the status pill
+                                uses: the browser's own control is what makes it
+                                keyboard-operable and touch-friendly for free,
+                                and drawing a listbox by hand is the version
+                                that ends up trapping focus. */}
+                            <span className="rung-pick" title="Move them to another round">
+                              <Caret />
+                              <select
+                                value={where.round.id}
+                                aria-label={`Move ${c.name || 'this candidate'} to another round`}
+                                onChange={(e) => void moveTo(ladder, e.target.value)}
+                              >
+                                {ladder
+                                  .filter((r) => !rung(r.kind).retired)
+                                  .map((r) => (
+                                    <option key={r.id} value={r.id}>
+                                      {rung(r.kind).no}. {rung(r.kind).label}
+                                    </option>
+                                  ))}
+                              </select>
                             </span>
-                          </>
+                          </span>
                         ) : (
                           <span className="none">No rounds</span>
                         )}

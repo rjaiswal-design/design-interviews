@@ -987,10 +987,8 @@ table.log {
 
 .rung-open:hover .lb { text-decoration: underline; }
 
-/* Two lines: the round, and what is happening in it. One row per candidate
-   means this column answers "where is everyone" on its own, so it carries the
-   status as well as the name — which is also why the Status column that used
-   to sit beside it was redundant and this is not. */
+/* The round's name. `.sub` is the second line under "All rounds done" — the
+   only state in this column that needs one. */
 .rung-cell .lb {
   display: block;
   font-size: 13.5px;
@@ -1004,26 +1002,56 @@ table.log {
   color: var(--color-muted);
 }
 
-/* The status, and when it is. One row per candidate makes this the control that
-   moves somebody through the process, so it sits under the round's name rather
-   than in a column of its own — near the thing it is about. */
-.rung-foot {
-  display: flex;
+/* Where they are, and the control that moves them. The caret sits beside the
+   round's name rather than under it: one line, and the thing you press is next
+   to the thing it changes. */
+.rung-at {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-block-start: 3px;
+  gap: 2px;
+  max-inline-size: 100%;
 }
 
-.rung-foot .when {
-  font-size: 12px;
+.rung-at .rung-open {
+  inline-size: auto;
+  min-inline-size: 0;
+}
+
+/* A caret with the real select laid invisibly over it — the same trick the
+   status pill uses. The browser's own control is what makes this
+   keyboard-operable and touch-friendly for nothing, and a hand-drawn listbox
+   is the version that traps focus. */
+.rung-pick {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: var(--prism-r-1);
   color: var(--color-muted);
-  white-space: nowrap;
+  transition:
+    background var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
 }
 
-/* The pill carries a 12px margin everywhere else it appears, which here would
-   push it away from the round it belongs to. */
-.rung-foot .pill {
-  margin: 0;
+.rung-pick:hover {
+  background: rgb(0 0 0 / 0.05);
+  color: var(--color-ink);
+}
+
+.rung-pick select {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rung-pick:focus-within {
+  box-shadow: 0 0 0 2px rgb(24 25 29 / 0.25);
 }
 
 /* Through the loop and waiting on a decision. Not a link, because there is no

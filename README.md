@@ -198,7 +198,14 @@ board answers is "where is everyone", not "list every conversation we have ever
 planned".
 
 **Round** is where they are now: the round in progress if there is one,
-otherwise the next one owed, with its status under it. Cancelled rounds are
+otherwise the next one owed. The caret beside it moves them to any round on
+their ladder — forwards, or back if somebody got ahead of themselves.
+
+Moving marks the rounds before the target **complete**, because moving somebody
+past a round is the assertion that it is behind them. A round that genuinely did
+not happen is *cancelled*, which is a different statement and is set on the
+round itself; `whereNow` steps over those too. The status pill that used to sit
+here did only one of these things and took a line to do it. Cancelled rounds are
 stepped over — a cancelled portfolio does not leave somebody stuck at portfolio
 for ever. A finished ladder reads **All rounds done · Waiting on a decision**,
 which is a different state from being at the last round and the one place this
