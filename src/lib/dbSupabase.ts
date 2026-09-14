@@ -228,6 +228,10 @@ export const supabaseDb = {
     put: async (row: TCandidate): Promise<void> => {
       orThrow(await sb().from('candidates').upsert(fromCandidate(row)).select('id'));
     },
+    putMany: async (rows: TCandidate[]): Promise<void> => {
+      if (rows.length === 0) return;
+      orThrow(await sb().from('candidates').upsert(rows.map(fromCandidate)).select('id'));
+    },
     del: async (id: string): Promise<void> => {
       // The cascades in 0001 take this candidate's rounds, segments and log
       // with them, which is why nothing above here deletes those by hand.
@@ -239,6 +243,25 @@ export const supabaseDb = {
     all: async (): Promise<TRound[]> => orThrow(await sb().from('rounds').select('*')).map(toRound),
     put: async (row: TRound): Promise<void> => {
       orThrow(await sb().from('rounds').upsert(fromRound(row)).select('id'));
+    },
+    putMany: async (rows: TRound[]): Promise<void> => {
+      if (rows.length === 0) return;
+      // Conflict on `(candidate_id, kind)`, not on the primary key.
+      //
+      // That pair *is* the identity of a round — one round per rung per
+      // candidate, which is the unique constraint in 0001 and the thing that
+      // makes a ladder drawable as a track. Upserting on `id` instead let a
+      // batch collide with a row for the same rung that had been created
+      // another way and therefore carried a different id:
+      // `duplicate key value violates unique constraint
+      // "rounds_candidate_id_kind_key"`. Conflicting on the natural key means
+      // a seed or an import can never produce a second round for a rung.
+      orThrow(
+        await sb()
+          .from('rounds')
+          .upsert(rows.map(fromRound), { onConflict: 'candidate_id,kind' })
+          .select('id'),
+      );
     },
     del: async (id: string): Promise<void> => {
       orThrow(await sb().from('rounds').delete().eq('id', id).select('id'));
@@ -273,12 +296,23 @@ export const supabaseDb = {
           .eq('candidate_id', candidateId)
           .order('t', { ascending: false }),
       ).map(toEvent),
-    putMany: async (rows: TEvent[]): Promise<void> => {
+    putMany: async (rows: TEvent[], ignoreDuplicates = false): Promise<void> => {
       if (rows.length === 0) return;
-      // Insert, not upsert: the log is append-only and there is no update
-      // policy on the table, so an upsert that resolved to an update would be
-      // refused by Postgres rather than quietly doing nothing.
-      orThrow(await sb().from('events').insert(rows.map(fromEvent)).select('id'));
+      // Insert, not upsert: the log is append-only and the table has no update
+      // policy, so an upsert resolving to an update would be refused rather
+      // than quietly doing nothing.
+      //
+      // `ignoreDuplicates` is `on conflict do nothing`, which needs no update
+      // policy either. Only the seed passes it — a repairing run re-offers
+      // lines that are already there, and for a real append a duplicate id is a
+      // bug worth hearing about.
+      const q = sb().from('events');
+      orThrow(
+        await (ignoreDuplicates
+          ? q.upsert(rows.map(fromEvent), { ignoreDuplicates: true })
+          : q.insert(rows.map(fromEvent))
+        ).select('id'),
+      );
     },
     del: async (): Promise<void> => {
       // Deliberately a no-op. The table has no delete policy — a log that can

@@ -175,11 +175,27 @@ const tx = async <T>(
 const all = <T>(store: TStore): Promise<T[]> =>
   tx<T[]>(store, 'readonly', (s) => s.getAll() as IDBRequest<T[]>);
 
+/** Many rows, one transaction. Was written out separately for segments and for
+ *  events; candidates and rounds needed it too once the seed started writing
+ *  them a table at a time. */
+const putAll = async <T>(store: TStore, rows: T[]): Promise<void> => {
+  if (rows.length === 0) return;
+  const conn = await open();
+  await new Promise<void>((resolve, reject) => {
+    const t = conn.transaction(store, 'readwrite');
+    const s = t.objectStore(store);
+    for (const row of rows) s.put(row);
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+  });
+};
+
 export const localDb = {
   candidates: {
     all: async () => (await all<TCandidate>('candidates')).map(hydrateCandidate),
     put: (row: TCandidate) =>
       tx('candidates', 'readwrite', (s) => s.put(row) as IDBRequest<IDBValidKey>),
+    putMany: (rows: TCandidate[]) => putAll('candidates', rows),
     del: (id: string) =>
       tx('candidates', 'readwrite', (s) => s.delete(id) as unknown as IDBRequest<undefined>),
   },
@@ -187,6 +203,7 @@ export const localDb = {
   rounds: {
     all: async () => (await all<TRound>('rounds')).map(hydrateRound),
     put: (row: TRound) => tx('rounds', 'readwrite', (s) => s.put(row) as IDBRequest<IDBValidKey>),
+    putMany: (rows: TRound[]) => putAll('rounds', rows),
     del: (id: string) =>
       tx('rounds', 'readwrite', (s) => s.delete(id) as unknown as IDBRequest<undefined>),
   },
@@ -209,17 +226,7 @@ export const localDb = {
       tx('segments', 'readwrite', (s) => s.put(row) as IDBRequest<IDBValidKey>),
     /** Written a line at a time while the interview runs, so this batches the
      *  whole flush into one transaction rather than one per line. */
-    putMany: async (rows: TSegment[]): Promise<void> => {
-      if (rows.length === 0) return;
-      const conn = await open();
-      await new Promise<void>((resolve, reject) => {
-        const t = conn.transaction('segments', 'readwrite');
-        const s = t.objectStore('segments');
-        for (const row of rows) s.put(row);
-        t.oncomplete = () => resolve();
-        t.onerror = () => reject(t.error);
-      });
-    },
+    putMany: (rows: TSegment[]) => putAll('segments', rows),
     del: (id: string) =>
       tx('segments', 'readwrite', (s) => s.delete(id) as unknown as IDBRequest<undefined>),
   },
@@ -236,17 +243,9 @@ export const localDb = {
       );
       return rows.map(hydrateEvent).sort((a, b) => b.t - a.t);
     },
-    putMany: async (rows: TEvent[]): Promise<void> => {
-      if (rows.length === 0) return;
-      const conn = await open();
-      await new Promise<void>((resolve, reject) => {
-        const t = conn.transaction('events', 'readwrite');
-        const s = t.objectStore('events');
-        for (const row of rows) s.put(row);
-        t.oncomplete = () => resolve();
-        t.onerror = () => reject(t.error);
-      });
-    },
+    // `ignoreDuplicates` is accepted and ignored: `put` is already an upsert
+    // here, so re-offering a line it already holds is a no-op either way.
+    putMany: (rows: TEvent[], _ignoreDuplicates = false) => putAll('events', rows),
     del: (id: string) =>
       tx('events', 'readwrite', (s) => s.delete(id) as unknown as IDBRequest<undefined>),
   },

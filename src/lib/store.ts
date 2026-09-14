@@ -180,18 +180,41 @@ export const useStore = create<TState>((set, get) => ({
       // has no flag — so emptiness of the *server* is the only sensible test,
       // and the seed's ids are deterministic so two people seeding at once
       // resolve to one board rather than two. See `seedId` in `seed.ts`.
+      // Seeded per table, not on "is the board empty".
+      //
+      // Emptiness does not survive a seed that fails part-way. The first run
+      // against Postgres wrote the candidates, hit a foreign key on the rounds
+      // and stopped — after which the board was not empty, so the seed was
+      // skipped for ever and the activity log was permanently missing. Asking
+      // each table whether its own seed rows arrived makes a retry finish the
+      // job.
+      //
+      // Safe to over-run: seed ids are deterministic and every write below is
+      // idempotent, so a table that is already complete is rewritten to exactly
+      // what it held.
+      const seed = buildSeed();
+      const short =
+        !candidates.some((c) => c.id === seed.candidates[0]?.id) ||
+        !rounds.some((r) => r.id === seed.rounds[0]?.id) ||
+        !events.some((e) => e.id === seed.events[0]?.id);
       const wants = backend() === 'supabase' || !localStorage.getItem(SEED_FLAG);
-      if (wants && candidates.length === 0) {
+      if (wants && short) {
         localStorage.setItem(SEED_FLAG, '1');
-        const seed = buildSeed();
-        await Promise.all([
-          ...seed.candidates.map((c) => db.candidates.put(c)),
-          ...seed.rounds.map((r) => db.rounds.put(r)),
-        ]);
-        await db.events.putMany(seed.events);
-        candidates = seed.candidates;
-        rounds = seed.rounds;
-        events.push(...seed.events);
+        // Candidates, then rounds, then the log — in that order and awaited,
+        // because a round references its candidate and an event references
+        // both. `Promise.all` over the lot fired them concurrently, which
+        // IndexedDB did not mind and Postgres refused outright:
+        // `insert or update on table "rounds" violates foreign key constraint`.
+        // One request per table rather than per row while we are here.
+        await db.candidates.putMany(seed.candidates);
+        await db.rounds.putMany(seed.rounds);
+        await db.events.putMany(seed.events, true);
+        // Re-read rather than assume: a repairing run has rows the seed did not
+        // write, and assigning the seed over the top would hide them until the
+        // next reload.
+        [candidates, rounds] = await Promise.all([db.candidates.all(), db.rounds.all()]);
+        events.length = 0;
+        events.push(...(await db.events.all()));
       }
 
       set({
@@ -350,6 +373,8 @@ export const useStore = create<TState>((set, get) => ({
         !r.notes.trim(),
     );
 
+    // Safe to run together: every one of these rounds belongs to a candidate
+    // that already exists, so there is no foreign key to race.
     await Promise.all([...added.map((r) => db.rounds.put(r)), ...stale.map((r) => db.rounds.del(r.id))]);
     set((s) => ({
       rounds: [...s.rounds.filter((r) => !stale.some((x) => x.id === r.id)), ...added],
@@ -358,10 +383,10 @@ export const useStore = create<TState>((set, get) => ({
 
   importDoc: async (candidates, rounds) => {
     const created = candidates.flatMap((c) => toEvents(c.id, '', ['Imported']));
-    await Promise.all([
-      ...candidates.map((c) => db.candidates.put(c)),
-      ...rounds.map((r) => db.rounds.put(r)),
-    ]);
+    // Same ordering as the seed, for the same reason: rounds have a foreign key
+    // to candidates, so they cannot be written alongside them.
+    await db.candidates.putMany(candidates);
+    await db.rounds.putMany(rounds);
     await db.events.putMany(created);
     localStorage.setItem(SEED_FLAG, '1');
     set((s) => ({
