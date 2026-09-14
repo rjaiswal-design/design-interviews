@@ -180,38 +180,28 @@ export const useStore = create<TState>((set, get) => ({
       // has no flag — so emptiness of the *server* is the only sensible test,
       // and the seed's ids are deterministic so two people seeding at once
       // resolve to one board rather than two. See `seedId` in `seed.ts`.
-      // Seeded per table, not on "is the board empty".
+      // Seeded only on the local backend.
       //
-      // Emptiness does not survive a seed that fails part-way. The first run
-      // against Postgres wrote the candidates, hit a foreign key on the rounds
-      // and stopped — after which the board was not empty, so the seed was
-      // skipped for ever and the activity log was permanently missing. Asking
-      // each table whether its own seed rows arrived makes a retry finish the
-      // job.
+      // The seed exists so a first run is a working funnel rather than an empty
+      // table with no way to tell whether the filters do anything. That is a
+      // prototype's problem. A shared board is somebody's actual hiring record,
+      // and eight fictional candidates appearing in it is not a convenience —
+      // it is a board you cannot trust and have to clean up, which is exactly
+      // what happened.
       //
-      // Safe to over-run: seed ids are deterministic and every write below is
-      // idempotent, so a table that is already complete is rewritten to exactly
-      // what it held.
-      const seed = buildSeed();
-      const short =
-        !candidates.some((c) => c.id === seed.candidates[0]?.id) ||
-        !rounds.some((r) => r.id === seed.rounds[0]?.id) ||
-        !events.some((e) => e.id === seed.events[0]?.id);
-      const wants = backend() === 'supabase' || !localStorage.getItem(SEED_FLAG);
-      if (wants && short) {
+      // So: Supabase boards start empty and stay empty. Clearing one keeps it
+      // cleared, which "reseed when the rows are missing" could never do
+      // without a server-side marker. The empty states on both boards point at
+      // Import and Add candidate.
+      const seed = backend() === 'local' && !localStorage.getItem(SEED_FLAG) ? buildSeed() : null;
+      if (seed) {
         localStorage.setItem(SEED_FLAG, '1');
-        // Candidates, then rounds, then the log — in that order and awaited,
+        // Candidates, then rounds, then the log — awaited in that order,
         // because a round references its candidate and an event references
-        // both. `Promise.all` over the lot fired them concurrently, which
-        // IndexedDB did not mind and Postgres refused outright:
-        // `insert or update on table "rounds" violates foreign key constraint`.
-        // One request per table rather than per row while we are here.
+        // both. One request per table rather than per row.
         await db.candidates.putMany(seed.candidates);
         await db.rounds.putMany(seed.rounds);
         await db.events.putMany(seed.events, true);
-        // Re-read rather than assume: a repairing run has rows the seed did not
-        // write, and assigning the seed over the top would hide them until the
-        // next reload.
         [candidates, rounds] = await Promise.all([db.candidates.all(), db.rounds.all()]);
         events.length = 0;
         events.push(...(await db.events.all()));

@@ -99,6 +99,7 @@ const Board = ({ mode }: TProps) => {
   const candidates = useStore((s) => s.candidates);
   const rounds = useStore((s) => s.rounds);
   const patchCandidate = useStore((s) => s.patchCandidate);
+  const addCandidate = useStore((s) => s.addCandidate);
   const events = useStore((s) => s.events);
 
   const [q, setQ] = useState('');
@@ -195,6 +196,13 @@ const Board = ({ mode }: TProps) => {
   }, [rounds, byId]);
 
   const roundsOf = (c: TCandidate): TRound[] => ladders.get(c.id) ?? [];
+
+  /** Add one and open it, because a blank row on a board you cannot see is not
+   *  a useful outcome of pressing "Add a candidate". */
+  const addAndOpen = async () => {
+    const id = await addCandidate();
+    go({ view: 'candidate', id });
+  };
 
   const exportCandidatesCsv = () => {
     const rows: (string | number)[][] = [
@@ -376,12 +384,22 @@ const Board = ({ mode }: TProps) => {
         {mode === 'rounds' ? (
           visibleRounds.length === 0 ? (
             <div className="empty">
-              <h2>Nothing matches</h2>
+              <h2>{active ? 'Nothing matches' : 'No rounds yet'}</h2>
               <p>
                 {active
                   ? 'No round on the board fits those filters. Clear them to see everything.'
-                  : 'No rounds yet. Import candidates from the database, or add one by hand — the ladder is generated from their level.'}
+                  : 'Rounds appear when somebody is shortlisted — a candidate nobody has decided to interview has none. Add a candidate, or bring a pile in with Import, then shortlist the ones worth talking to.'}
               </p>
+              {!active && (
+                <div className="row-acts">
+                  <button type="button" className="btn" onClick={() => void addAndOpen()}>
+                    Add a candidate
+                  </button>
+                  <button type="button" className="btn-quiet" onClick={() => go({ view: 'people' })}>
+                    See the candidates
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <table className="log">
@@ -478,8 +496,19 @@ const Board = ({ mode }: TProps) => {
           )
         ) : visiblePeople.length === 0 ? (
           <div className="empty">
-            <h2>Nobody here</h2>
-            <p>Import candidates from the database, or add one by hand.</p>
+            <h2>{q ? 'Nobody matches' : 'Nobody here yet'}</h2>
+            <p>
+              {q
+                ? 'No candidate matches that search.'
+                : 'Import a pile from wherever they came from — the button is in the bar, and it reads most exports as they are — or add one by hand.'}
+            </p>
+            {!q && (
+              <div className="row-acts">
+                <button type="button" className="btn" onClick={() => void addAndOpen()}>
+                  Add a candidate
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <table className="log" style={{ minWidth: 1440 }}>
