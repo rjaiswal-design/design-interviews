@@ -112,7 +112,9 @@ one module real identity replaces.
 | Path | What it is |
 |------|------------|
 | `src/lib/ladder.ts` | The rungs, their scripts, and what each one is allowed to judge |
-| `src/lib/db.ts` | **The storage seam.** The only file that touches IndexedDB |
+| `src/lib/db.ts` | **The storage seam.** Chooses the backend, and nothing else |
+| `src/lib/dbSupabase.ts` | The Supabase backend, and the only row mapping |
+| `src/lib/dbLocal.ts` | The IndexedDB backend, used when no project is configured |
 | `src/lib/store.ts` | Zustand store; every write goes through `db` |
 | `src/lib/transcript.ts` | Parsing a transcript pasted from Zoom, Meet or Teams |
 | `src/lib/events.ts` | The sentences the activity log is made of |
