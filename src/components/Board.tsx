@@ -7,7 +7,7 @@ import { DECISION_LABELS, LADDER, STATUS_LABELS, ladderFor, rung,
   byLadder,
 } from '../lib/ladder';
 import { go } from '../lib/route';
-import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS } from '../lib/candidateStatus';
+import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, inProcess } from '../lib/candidateStatus';
 import { useStore } from '../lib/store';
 import type { TCandidate, TCandidateStatus, TEvent, TRound, TRoundStatus } from '../types';
 import FilterChip from './FilterChip';
@@ -44,51 +44,55 @@ type TProps = {
 };
 
 /**
+ * Where a candidate is now.
+ *
+ * The first round on their ladder that is not finished: the one in progress if
+ * there is one, otherwise the next one owed. Cancelled rounds are stepped over
+ * — a cancelled portfolio does not leave somebody stuck at portfolio for ever.
+ *
+ * Everything complete is its own answer rather than the last round again. They
+ * are through the loop and waiting on a decision, which is a different thing
+ * from being at culture fit, and the one state where the board should be
+ * telling somebody to act.
+ */
+type TWhere = { round?: TRound; done: boolean };
+
+const whereNow = (ladder: TRound[]): TWhere => {
+  const live = ladder.find((r) => r.status === 'in_progress');
+  if (live) return { round: live, done: false };
+  const next = ladder.find((r) => r.status === 'scheduled');
+  if (next) return { round: next, done: false };
+  // Nothing scheduled and nothing running. If anything was ever completed they
+  // are through; if the whole ladder was cancelled they are not, and the last
+  // round is the most honest thing to name.
+  const anyComplete = ladder.some((r) => r.status === 'complete');
+  return { round: ladder[ladder.length - 1], done: anyComplete };
+};
+
+/**
  * The order the board reads in.
  *
- * Most recent activity first. The only time on a row is now the time in the
- * Latest column, and a board sorted on a date it does not show is a board in an
- * order nobody can explain — the previous sort banded rows by their scheduled
- * date, which was legible only while that date was a column.
+ * Most recent activity first, because the only time on a row is the time in the
+ * Latest column and a board sorted on something it does not show is a board in
+ * an order nobody can explain.
  *
- * Two exceptions, both earned:
- *
- *   The round happening now pins to the top. There is at most one, it is the
- *   only highlighted row, and it is the whole screen while it lasts.
- *
- *   Rounds nothing has happened to yet fall to the bottom, ordered by when they
- *   are scheduled. They have no activity to sort by, and the next one owed is
- *   the most useful of them — an unscheduled round is last, not first, because
- *   a 0 date sorted as an epoch lands in 1970.
+ * Two exceptions. A candidate with a round happening right now pins to the top
+ * — there is rarely more than one and it is the whole screen while it lasts.
+ * Candidates nothing has happened to yet fall to the bottom, newest first,
+ * because the newest is the one somebody is about to start booking.
  */
 const orderByActivity =
-  (latest: Map<string, TEvent>, refOf: (candidateId: string) => number) =>
-  (a: TRound, b: TRound): number => {
-    const liveA = a.status === 'in_progress';
-    const liveB = b.status === 'in_progress';
+  (latest: Map<string, TEvent>, liveIds: Set<string>) =>
+  (a: TCandidate, b: TCandidate): number => {
+    const liveA = liveIds.has(a.id);
+    const liveB = liveIds.has(b.id);
     if (liveA !== liveB) return liveA ? -1 : 1;
 
     const ta = latest.get(a.id)?.t ?? 0;
     const tb = latest.get(b.id)?.t ?? 0;
     if (ta !== tb) return tb - ta;
 
-    const sa = a.scheduledAt || Number.MAX_SAFE_INTEGER;
-    const sb = b.scheduledAt || Number.MAX_SAFE_INTEGER;
-    if (sa !== sb) return sa - sb;
-
-    // Nothing has happened in either and neither is booked, which is every
-    // round of a candidate who has just been shortlisted. Every comparison
-    // above returns 0 there, so the order was whatever the database handed
-    // back — four rounds of one person in no order at all, which reads as four
-    // duplicate rows rather than as a ladder.
-    //
-    // Newest candidate first, then up their ladder: their rounds stay together
-    // and run 1, 2, 3, 4.
-    const ra = refOf(a.candidateId);
-    const rb = refOf(b.candidateId);
-    if (ra !== rb) return rb - ra;
-
-    return rung(a.kind).no - rung(b.kind).no;
+    return b.ref - a.ref;
   };
 
 /**
@@ -129,63 +133,11 @@ const Board = ({ mode }: TProps) => {
    *  snapshot never compares equal, and React re-renders until it gives up. */
   const byId = useMemo(() => new Map(candidates.map((c) => [c.id, c])), [candidates]);
 
-  /**
-   * The newest event per round, as a map.
-   *
-   * Built once per paint rather than searched per row: `events.find(...)` in a
-   * cell is O(rows × events), which on a busy funnel is the kind of quadratic
-   * that only shows up once there is enough history to matter. The store keeps
-   * events newest-first, so the first hit for a round is its latest.
-   */
-  const latest = useMemo(() => {
-    const m = new Map<string, TEvent>();
-    for (const e of events) {
-      if (e.roundId && !m.has(e.roundId)) m.set(e.roundId, e);
-    }
-    return m;
-  }, [events]);
-  const latestFor = (roundId: string) => latest.get(roundId);
-
   const panelNames = useMemo(() => {
     const set = new Set<string>();
     for (const r of rounds) for (const p of r.interviewers) set.add(p);
     return [...set].sort();
   }, [rounds]);
-
-  const visibleRounds = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return rounds
-      .filter((r) => {
-        const c = byId.get(r.candidateId);
-        if (!c) return false;
-        if (fTrack && c.track !== fTrack) return false;
-        if (fRung && r.kind !== fRung) return false;
-        if (fStatus && r.status !== fStatus) return false;
-        if (fPanel && !r.interviewers.includes(fPanel)) return false;
-        if (!needle) return true;
-        return (
-          c.name.toLowerCase().includes(needle) ||
-          c.role.toLowerCase().includes(needle) ||
-          c.level.toLowerCase().includes(needle) ||
-          r.interviewers.join(' ').toLowerCase().includes(needle)
-        );
-      })
-      .sort(orderByActivity(latest, (id) => byId.get(id)?.ref ?? 0));
-  }, [rounds, byId, latest, q, fTrack, fRung, fStatus, fPanel]);
-
-  const visiblePeople = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return candidates.filter((c) => {
-      if (!needle) return true;
-      return (
-        c.name.toLowerCase().includes(needle) ||
-        c.role.toLowerCase().includes(needle) ||
-        c.level.toLowerCase().includes(needle) ||
-        c.location.toLowerCase().includes(needle) ||
-        c.source.toLowerCase().includes(needle)
-      );
-    });
-  }, [candidates, q]);
 
   /**
    * Each candidate's rounds, in ladder order, indexed once.
@@ -211,7 +163,76 @@ const Board = ({ mode }: TProps) => {
     return m;
   }, [rounds, byId]);
 
-  const roundsOf = (c: TCandidate): TRound[] => ladders.get(c.id) ?? [];
+  /** The newest event per candidate, for the Latest column and the sort. */
+  const latestByCandidate = useMemo(() => {
+    const m = new Map<string, TEvent>();
+    // The store keeps events newest-first, so the first hit wins.
+    for (const e of events) if (!m.has(e.candidateId)) m.set(e.candidateId, e);
+    return m;
+  }, [events]);
+
+  const liveCandidates = useMemo(
+    () => new Set(rounds.filter((r) => r.status === 'in_progress').map((r) => r.candidateId)),
+    [rounds],
+  );
+
+  /**
+   * One row per candidate being interviewed.
+   *
+   * It was one row per round, which put a freshly shortlisted candidate on the
+   * board four or five times over — the same name, the same role, the same
+   * everything but the round. That reads as duplication however correct it is,
+   * and the question this board answers is "where is everyone", not "list every
+   * conversation we have ever planned".
+   *
+   * Only candidates in the process. Somebody nobody has shortlisted has no
+   * rounds and nothing to be at; they belong on the Candidates tab, which is
+   * where shortlisting happens.
+   */
+  const visibleRows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return candidates
+      .filter((c) => {
+        if (!inProcess(c.status)) return false;
+        if (fTrack && c.track !== fTrack) return false;
+
+        const ladder = ladders.get(c.id) ?? [];
+        const where = whereNow(ladder);
+
+        // Round and Status filter on where they are *now*, which is what the
+        // column shows — "who is at the craft round" is the question, not "who
+        // has a craft round somewhere on their ladder".
+        if (fRung && where.round?.kind !== fRung) return false;
+        if (fStatus && where.round?.status !== fStatus) return false;
+        // Panel matches anywhere on their ladder. Scoped to the current round
+        // it would hide a candidate whose portfolio you ran and who has since
+        // moved on, which is exactly who you want to find.
+        if (fPanel && !ladder.some((r) => r.interviewers.includes(fPanel))) return false;
+
+        if (!needle) return true;
+        return (
+          c.name.toLowerCase().includes(needle) ||
+          c.role.toLowerCase().includes(needle) ||
+          c.level.toLowerCase().includes(needle) ||
+          ladder.some((r) => r.interviewers.join(' ').toLowerCase().includes(needle))
+        );
+      })
+      .sort(orderByActivity(latestByCandidate, liveCandidates));
+  }, [candidates, ladders, latestByCandidate, liveCandidates, q, fTrack, fRung, fStatus, fPanel]);
+
+  const visiblePeople = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return candidates.filter((c) => {
+      if (!needle) return true;
+      return (
+        c.name.toLowerCase().includes(needle) ||
+        c.role.toLowerCase().includes(needle) ||
+        c.level.toLowerCase().includes(needle) ||
+        c.location.toLowerCase().includes(needle) ||
+        c.source.toLowerCase().includes(needle)
+      );
+    });
+  }, [candidates, q]);
 
   /** Add one and open it, because a blank row on a board you cannot see is not
    *  a useful outcome of pressing "Add a candidate". */
@@ -271,22 +292,24 @@ const Board = ({ mode }: TProps) => {
         'call',
         'lines',
       ],
-      ...visibleRounds.map((r) => {
-        const c = byId.get(r.candidateId);
-        return [
-          c?.ref ?? '',
-          c?.name ?? '',
-          c ? TRACK_LABELS[c.track] : '',
-          c?.role ?? '',
-          c?.level ?? '',
+      // Every round of every candidate on screen, not one row per candidate.
+      // The board summarises; an export is the data behind it, and a
+      // spreadsheet with four rounds collapsed into "currently at portfolio"
+      // cannot answer anything you would open a spreadsheet for.
+      ...visibleRows.flatMap((c) => (ladders.get(c.id) ?? []).map((r) => [
+          c.ref,
+          c.name,
+          TRACK_LABELS[c.track],
+          c.role,
+          c.level,
           rung(r.kind).label,
           r.interviewers.join('; '),
           r.scheduledAt ? new Date(r.scheduledAt).toISOString() : '',
           STATUS_LABELS[r.status],
           DECISION_LABELS[r.decision],
           r.lineCount,
-        ];
-      }),
+        ]),
+      ),
     ];
     download('interviews.csv', toCsv(rows));
   };
@@ -398,13 +421,13 @@ const Board = ({ mode }: TProps) => {
       <div className="wrap sheet-wrap">
         <div className="sheet">
         {mode === 'rounds' ? (
-          visibleRounds.length === 0 ? (
+          visibleRows.length === 0 ? (
             <div className="empty">
-              <h2>{active ? 'Nothing matches' : 'No rounds yet'}</h2>
+              <h2>{active ? 'Nothing matches' : 'Nobody in the process'}</h2>
               <p>
                 {active
-                  ? 'No round on the board fits those filters. Clear them to see everything.'
-                  : 'Rounds appear when somebody is shortlisted — a candidate nobody has decided to interview has none. Add a candidate, or bring a pile in with Import, then shortlist the ones worth talking to.'}
+                  ? 'Nobody on the board fits those filters. Clear them to see everyone.'
+                  : 'This board is everyone being interviewed and where they have got to. Rounds appear when somebody is shortlisted — a candidate nobody has decided to interview has none. Add a candidate, or bring a pile in with Import, then shortlist the ones worth talking to.'}
               </p>
               {!active && (
                 <div className="row-acts">
@@ -430,12 +453,13 @@ const Board = ({ mode }: TProps) => {
                 </tr>
               </thead>
               <tbody>
-                {visibleRounds.map((r) => {
-                  const c = byId.get(r.candidateId);
-                  if (!c) return null;
-                  const rg = rung(r.kind);
+                {visibleRows.map((c) => {
+                  const ladder = ladders.get(c.id) ?? [];
+                  const where = whereNow(ladder);
+                  const rg = where.round ? rung(where.round.kind) : undefined;
+                  const live = where.round?.status === 'in_progress';
                   return (
-                    <tr key={r.id} className={r.status === 'in_progress' ? 'live' : undefined}>
+                    <tr key={c.id} className={live ? 'live' : undefined}>
                       <td className="cell-ref">#{c.ref}</td>
 
                       <td>
@@ -447,60 +471,62 @@ const Board = ({ mode }: TProps) => {
                           <span className="av u-circle">{initials(c.name) || '—'}</span>
                           <span className="lines">
                             <span className="nm">{c.name || 'Unnamed'}</span>
-                            {/* The role has its own column now, so the
-                                sub-line carries only what is left. */}
                             <span className="rl">{c.level}</span>
                           </span>
                         </button>
                       </td>
 
-                      <td className="panel-cell">
-                        {c.role || <span className="none">—</span>}
-                      </td>
+                      <td className="panel-cell">{c.role || <span className="none">—</span>}</td>
 
                       <td className="rung-cell">
-                        {/* The way into the round, now that the row has no
-                            button. Clicking the round to open the round needs
-                            no label; a column of "Activity" buttons was one
-                            word repeated forty times to say so. */}
-                        {/* No rung number here. The ladder in the next column
-                            already says which of the four this is, and says it
-                            in a form you can read down the page — a digit in
-                            front of the name was the same fact in words. It
-                            stays where there is no ladder beside it: the round
-                            cards in the panel, and the round page's own bar. */}
-                        <button
-                          type="button"
-                          className="rung-open"
-                          onClick={() => go({ view: 'room', id: r.id })}
-                          title="Open this round — link, script, scorecard, transcript, log"
-                        >
-                          <span className="lb">{rg.label}</span>
-                        </button>
+                        {/* Where they are and what is happening there.
+                            One row per candidate means this column carries the
+                            whole answer to "where is everyone", so it needs the
+                            status as well as the name — which is also why the
+                            Status column that used to sit here was redundant
+                            and this is not. */}
+                        {where.done ? (
+                          <span className="rung-done">
+                            <span className="lb">All rounds done</span>
+                            <span className="sub">Waiting on a decision</span>
+                          </span>
+                        ) : rg && where.round ? (
+                          <button
+                            type="button"
+                            className="rung-open"
+                            onClick={() => go({ view: 'room', id: where.round?.id ?? '' })}
+                            title="Open this round — link, script, scorecard, transcript, log"
+                          >
+                            <span className="lb">{rg.label}</span>
+                            <span className="sub">
+                              {STATUS_LABELS[where.round.status]}
+                              {where.round.scheduledAt
+                                ? ` · ${relative(where.round.scheduledAt)}`
+                                : where.round.status === 'scheduled'
+                                  ? ' · no date yet'
+                                  : ''}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="none">No rounds</span>
+                        )}
                       </td>
 
                       <td>
                         <LadderMini
-                          rounds={roundsOf(c)}
-                          activeId={r.id}
+                          rounds={ladder}
+                          activeId={where.round?.id}
                           onPick={(id) => go({ view: 'room', id })}
                         />
                       </td>
 
                       <td>
-                        {/* The last thing that happened, not the current state
-                            of three fields. A status pill and a call pill say
-                            what a round *is*; one line of log says what someone
-                            did and when, which is the question being asked when
-                            anyone scans this sheet. The state itself is edited
-                            where it is decided — in the room and the panel.
-
-                            Last on the row, because it is the one column that
-                            holds a sentence: everything to its left can be
-                            sized exactly, so this is what should absorb the
-                            slack at any window width. */}
+                        {/* The last thing that happened to this person — which
+                            with one row each is the right grain: the log is
+                            read to find out what changed, and "who changed it
+                            and when" is the whole of that. */}
                         <LatestCell
-                          event={latestFor(r.id)}
+                          event={latestByCandidate.get(c.id)}
                           onOpen={() => go({ view: 'candidate', id: c.id })}
                         />
                       </td>

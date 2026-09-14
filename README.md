@@ -158,56 +158,42 @@ of `undefined`, and the old value is still a decision somebody made.
 
 ## The board
 
-One row per round: **ref, candidate, applying for, round, ladder, latest**.
+**One row per candidate being interviewed**, showing where they have got to:
+**ref, candidate, applying for, round, ladder, latest**.
 
-The ladder sits beside the round it marks, so the thickened segment and the
-round name read together. Latest is last because it is the only column holding
-a sentence — everything to its left can be sized exactly, so this is what
-absorbs the slack at any window width.
+It was one row per round, which put a freshly shortlisted candidate on the
+board four or five times over — same name, same role, same everything but the
+round. That reads as duplication however correct it is, and the question this
+board answers is "where is everyone", not "list every conversation we have ever
+planned".
 
-The round cell is the way into the round — clicking the round to open the round
-needs no label, and the column of "Activity" buttons it replaced was one word
-repeated down the page to say so.
+**Round** is where they are now: the round in progress if there is one,
+otherwise the next one owed, with its status under it. Cancelled rounds are
+stepped over — a cancelled portfolio does not leave somebody stuck at portfolio
+for ever. A finished ladder reads **All rounds done · Waiting on a decision**,
+which is a different state from being at the last round and the one place this
+board asks somebody to act. `whereNow()` in `Board.tsx` is the whole rule.
 
-The ladder column is that candidate's ladder at row height, with this row's
-round drawn thicker. Each segment opens its round, so from any row you can see where
-the person stands across their whole track and jump to any of them — strictly
-more than the button did.
+That is also why the round cell carries a status when the Status *column* was
+removed as redundant: with one row each, this column answers the question on its
+own.
 
-There is no date column. The Latest column already carries a time — "Soumya
-Nair · 2 days ago" — and a date beside it was saying the same thing twice. The
-round's own date is set and read on the round itself, and it is still in the CSV
-export, which is for spreadsheets and wants the exact value.
+**Ladder** is their whole track at row height with the current round drawn
+thicker, and each segment opens its round — so the summary never costs you
+access to the rest. **Latest** is the newest log line for that person.
 
-**The sort follows the only visible time.** Most recent activity first, with the
-round that is happening now pinned to the top and rounds nothing has happened to
-yet at the bottom, ordered by when they are due. The previous sort banded rows
-by scheduled date, which was legible only while that date was a column — a board
-sorted on a field it does not show is a board in an order nobody can explain.
+Only candidates in the process appear. Somebody nobody has shortlisted has no
+rounds and nothing to be at; they belong on the Candidates tab, which is where
+shortlisting happens.
 
-**The Candidates view is about the person, not their progress.** It once
-carried Ladder / Done / Next / Last contacted, all of which described where
-someone had got to — which is the rounds board's job, one row per conversation
-with the ladder on it. What this table holds instead is the facts you need
-*about* a candidate: **ref, candidate, applying for, status, location, email,
-phone, company, their title**. The candidate cell carries their level and how they
-reached us, which is the fact that decides who chases them. Email and phone are `mailto:`/`tel:` links, because contact
-details on a hiring board exist to be used.
+Filters: **Track** and **Round**/**Status** match where they are *now*, which is
+what the column shows. **Panel** matches anywhere on their ladder — scoped to
+the current round it would hide a candidate whose portfolio you ran and who has
+since moved on, which is exactly who you want to find.
 
-`role` is the opening they are up for; `previousPosition` is their own title
-where they work now. Both matter and they are not the same — a Staff designer
-at Careem can be up for an IC4 opening here — which is also why the importer
-maps a column called "Job Title" to *theirs* and keeps `role` for "Applied
-For", "Req" and the like.
-
-Export follows the view: `candidates.csv` from the Candidates view,
-`interviews.csv` from the rounds board. It always wrote the rounds sheet, which
-on the Candidates view meant an export with none of the columns you were
-looking at.
-
-Interviewers are not a column. The panel is set on the round and filtered on in
-the bar, which is how "what am I interviewing this week" gets answered; a column
-of names repeated down the page was not answering anything.
+Export is still one row per *round*. The board summarises; an export is the data
+behind it, and a spreadsheet with five rounds collapsed into "currently at
+portfolio" cannot answer anything you would open a spreadsheet for.
 
 ## The activity log
 

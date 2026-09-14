@@ -986,9 +986,33 @@ table.log {
 
 .rung-open:hover .lb { text-decoration: underline; }
 
+/* Two lines: the round, and what is happening in it. One row per candidate
+   means this column answers "where is everyone" on its own, so it carries the
+   status as well as the name — which is also why the Status column that used
+   to sit beside it was redundant and this is not. */
 .rung-cell .lb {
+  display: block;
   font-size: 13.5px;
   font-weight: 500;
+}
+
+.rung-cell .sub {
+  display: block;
+  margin-block-start: 1px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* Through the loop and waiting on a decision. Not a link, because there is no
+   round to open — and drawn in the ink rather than the muted tone, since it is
+   the one state on this board that is asking somebody to do something. */
+.rung-done .lb {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.rung-done .sub {
+  color: var(--color-draft);
 }
 
 .when-cell .abs {
@@ -1335,6 +1359,11 @@ table.log {
 .track-mini .bad { background-color: var(--color-fail); }
 .track-mini .now { background-color: var(--color-draft); }
 .track-mini .off { background-color: var(--color-line-strong); }
+/* Happened, but nobody has made the call yet. The full-size track has had this
+   since it was written; the mini version never did, so a round somebody had
+   finished and not yet judged was drawn exactly like one nobody had started —
+   which is the one pair of states on this graphic that must not look alike. */
+.track-mini .on { background-color: var(--color-ink); }
 
 /* Which round this row is about: a thicker bar, not a second mark beside it.
    Colour is already carrying the call, so tinting "you are here" would make it
