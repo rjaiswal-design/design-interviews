@@ -62,7 +62,7 @@ type TProps = {
  *   a 0 date sorted as an epoch lands in 1970.
  */
 const orderByActivity =
-  (latest: Map<string, TEvent>) =>
+  (latest: Map<string, TEvent>, refOf: (candidateId: string) => number) =>
   (a: TRound, b: TRound): number => {
     const liveA = a.status === 'in_progress';
     const liveB = b.status === 'in_progress';
@@ -72,7 +72,23 @@ const orderByActivity =
     const tb = latest.get(b.id)?.t ?? 0;
     if (ta !== tb) return tb - ta;
 
-    return (a.scheduledAt || Number.MAX_SAFE_INTEGER) - (b.scheduledAt || Number.MAX_SAFE_INTEGER);
+    const sa = a.scheduledAt || Number.MAX_SAFE_INTEGER;
+    const sb = b.scheduledAt || Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+
+    // Nothing has happened in either and neither is booked, which is every
+    // round of a candidate who has just been shortlisted. Every comparison
+    // above returns 0 there, so the order was whatever the database handed
+    // back — four rounds of one person in no order at all, which reads as four
+    // duplicate rows rather than as a ladder.
+    //
+    // Newest candidate first, then up their ladder: their rounds stay together
+    // and run 1, 2, 3, 4.
+    const ra = refOf(a.candidateId);
+    const rb = refOf(b.candidateId);
+    if (ra !== rb) return rb - ra;
+
+    return rung(a.kind).no - rung(b.kind).no;
   };
 
 /**
@@ -154,7 +170,7 @@ const Board = ({ mode }: TProps) => {
           r.interviewers.join(' ').toLowerCase().includes(needle)
         );
       })
-      .sort(orderByActivity(latest));
+      .sort(orderByActivity(latest, (id) => byId.get(id)?.ref ?? 0));
   }, [rounds, byId, latest, q, fTrack, fRung, fStatus, fPanel]);
 
   const visiblePeople = useMemo(() => {
