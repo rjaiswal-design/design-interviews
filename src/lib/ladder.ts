@@ -74,7 +74,11 @@ const PRODUCT: TRung[] = [
     purpose:
       'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
     durationMin: 30,
-    owners: ['Rahul', 'Aanchal'],
+    // A role, not a person. Whoever holds it runs the screen, and the
+    // actual name goes on the round's panel when it is booked — which is
+    // what an owner is for: a sensible default, not a claim about who is
+    // in the room.
+    owners: ['HR executive'],
     track: 'product',
     signals: ['communication', 'ambition'],
     prompts: [
@@ -212,7 +216,11 @@ const VISUAL: TRung[] = [
     purpose:
       'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
     durationMin: 30,
-    owners: ['Rahul', 'Aanchal'],
+    // A role, not a person. Whoever holds it runs the screen, and the
+    // actual name goes on the round's panel when it is booked — which is
+    // what an owner is for: a sensible default, not a claim about who is
+    // in the room.
+    owners: ['HR executive'],
     track: 'visual',
     signals: ['communication', 'ambition'],
     prompts: [
