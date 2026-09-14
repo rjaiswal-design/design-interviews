@@ -397,7 +397,7 @@ const CandidatePanel = ({
                   </div>
 
                   <div className="card-rows">
-                    {r.retired && (
+                    {r.signals.length === 0 && (
                       <p style={{ margin: 0, fontSize: 12.5, color: 'var(--prism-text-tertiary)' }}>
                         {r.purpose}
                       </p>

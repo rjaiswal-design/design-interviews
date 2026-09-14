@@ -32,15 +32,20 @@ export type TTrack = 'product' | 'visual';
  * which they will, shared ids would have had to be split anyway.
  */
 export type TRoundKind =
+  | 'pd_hr'
   | 'pd_portfolio'
   | 'pd_critique'
   | 'pd_ai_coding'
   | 'pd_culture'
   | 'pd_product'
+  | 'pd_offer'
+  | 'vd_hr'
   | 'vd_portfolio'
+  | 'vd_motion'
   | 'vd_working'
   | 'vd_product'
-  | 'vd_culture';
+  | 'vd_culture'
+  | 'vd_offer';
 
 /**
  * Rungs the process used to have.

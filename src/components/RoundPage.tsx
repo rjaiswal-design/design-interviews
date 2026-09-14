@@ -227,9 +227,18 @@ const RoundPage = ({ round, candidate, trail, onClose }: TProps) => {
             </div>
           )}
 
+          {/* No signals means nothing to score — a retired rung, or the offer
+              call, whose outcome is the candidate's status and not a mark out
+              of four. The heading says what the block actually is rather than
+              promising a scorecard and showing one row. */}
           <div className="block">
-            <h3>{r.retired ? 'The call' : 'Scorecard — what this round can judge'}</h3>
+            <h3>{r.signals.length === 0 ? 'The call' : 'Scorecard — what this round can judge'}</h3>
             <div className="card-rows">
+              {r.signals.length === 0 && (
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--prism-text-tertiary)' }}>
+                  {r.purpose}
+                </p>
+              )}
               {r.signals.map((sig) => (
                 <div className="card-row" key={sig}>
                   <span className="sig">{SIGNAL_LABELS[sig]}</span>

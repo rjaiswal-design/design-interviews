@@ -16,24 +16,44 @@ against different things — so they are two processes, not one with optional
 rungs. A candidate's `track` decides which they walk, and everyone on a track
 walks all of it.
 
-**Product design**
+**Product design** — 7 rounds, 5h 30m of a candidate's time
 
 | # | Round | Who runs it | Judges |
 |---|-------|-------------|--------|
-| 1 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
-| 2 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
-| 3 | AI coding | Arnab | Craft, Systems, Product thinking |
-| 4 | Culture fit | Ayush | Ambition, Collaboration |
-| 5 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
+| 1 | HR round | HR | Communication, Ambition |
+| 2 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
+| 3 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
+| 4 | AI coding | Arnab | Craft, Systems, Product thinking |
+| 5 | Culture fit | Ayush | Ambition, Collaboration |
+| 6 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
+| 7 | Offer rollout | Rahul | — |
 
-**Visual design**
+**Visual design** — 7 rounds, 5h 45m
 
 | # | Round | Who runs it | Judges |
 |---|-------|-------------|--------|
-| 1 | Portfolio | Sanket / Jithin | Craft, Communication |
-| 2 | Working session | Tamanna | Craft, Collaboration, Communication |
-| 3 | Product round | Rahul | Product thinking, Systems, Communication |
-| 4 | Culture fit | Ayush | Ambition, Collaboration |
+| 1 | HR round | HR | Communication, Ambition |
+| 2 | Portfolio | Sanket / Jithin | Craft, Communication |
+| 3 | Motion ⇄ Visual | Saswata | Craft, Systems |
+| 4 | Working session | Tamanna | Craft, Collaboration, Communication |
+| 5 | Product round | Rahul | Product thinking, Systems, Communication |
+| 6 | Culture fit | Ayush | Ambition, Collaboration |
+| 7 | Offer rollout | Rahul | — |
+
+The **HR round** comes first so scope, level, market and money are said out loud
+before anyone spends an hour on a portfolio.
+
+**Motion ⇄ Visual** is about the file rather than the picture: whether an
+illustration is layered so it can move, or is one flat thing that has to be
+redrawn to animate. Its signals are craft and systems, not communication — how
+a file is constructed and whether the next person can pick it up is the same
+question the design system asks of a component.
+
+**Offer rollout** has no signals, and that is deliberate. It is not an
+assessment: the decision is already made, and the outcome is the candidate's
+status — offer rollout, then hired or offer dropped — not a mark out of four. A
+round with no signals shows its purpose where the scorecard would be, rather
+than promising a scorecard and rendering one empty row.
 
 `owners` is a default, not a rule: new rounds are pre-assigned to whoever runs
 them, because "Portfolio with Ayaneshu" is how the process is described out loud

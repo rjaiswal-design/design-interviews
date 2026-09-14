@@ -901,7 +901,8 @@ table.log {
 
 .col-ref { width: 60px; }
 .col-who { width: auto; min-width: 240px; }
-.col-rung { width: 190px; }
+/* Holds a round name over a status pill and a date. */
+.col-rung { width: 210px; }
 .col-panel { width: 170px; }
 .col-role { width: auto; min-width: 180px; }
 /* Takes what the fixed columns leave. It holds a sentence, and everything
@@ -1001,6 +1002,28 @@ table.log {
   margin-block-start: 1px;
   font-size: 12px;
   color: var(--color-muted);
+}
+
+/* The status, and when it is. One row per candidate makes this the control that
+   moves somebody through the process, so it sits under the round's name rather
+   than in a column of its own — near the thing it is about. */
+.rung-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: 3px;
+}
+
+.rung-foot .when {
+  font-size: 12px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* The pill carries a 12px margin everywhere else it appears, which here would
+   push it away from the round it belongs to. */
+.rung-foot .pill {
+  margin: 0;
 }
 
 /* Through the loop and waiting on a decision. Not a link, because there is no

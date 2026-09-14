@@ -55,8 +55,27 @@ export const TRACKS: TTrack[] = ['product', 'visual'];
 
 const PRODUCT: TRung[] = [
   {
-    kind: 'pd_portfolio',
+    kind: 'pd_hr',
     no: 1,
+    label: 'HR round',
+    purpose:
+      'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
+    durationMin: 30,
+    owners: ['HR'],
+    track: 'product',
+    signals: ['communication', 'ambition'],
+    prompts: [
+      'What are you working on right now, and what pulled you to look?',
+      'What kind of problem do you want to be holding in two years?',
+      'Scope, level, market, comp band. Say the numbers out loud.',
+      'Notice period, and anything else in flight?',
+      'What does a good design team look like to you — and a bad one?',
+      'What do you want to know about us?',
+    ],
+  },
+  {
+    kind: 'pd_portfolio',
+    no: 2,
     label: 'Portfolio',
     purpose: 'One project, end to end, in their own words. Depth over breadth.',
     durationMin: 60,
@@ -74,7 +93,7 @@ const PRODUCT: TRung[] = [
   },
   {
     kind: 'pd_critique',
-    no: 2,
+    no: 3,
     label: 'Design critique & whiteboarding',
     purpose:
       'A live problem on our surface, then our work put in front of them. Watching them think, and watching them judge.',
@@ -94,7 +113,7 @@ const PRODUCT: TRung[] = [
   },
   {
     kind: 'pd_ai_coding',
-    no: 3,
+    no: 4,
     label: 'AI coding',
     purpose:
       'Can they build the thing, with the tools that now exist? Not whether they are an engineer — whether they can get an idea running and judge what comes back.',
@@ -113,7 +132,7 @@ const PRODUCT: TRung[] = [
   },
   {
     kind: 'pd_culture',
-    no: 4,
+    no: 5,
     label: 'Culture fit',
     purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
@@ -131,7 +150,7 @@ const PRODUCT: TRung[] = [
   },
   {
     kind: 'pd_product',
-    no: 5,
+    no: 6,
     label: 'Product thinking',
     purpose: 'Whether they can hold a business problem, not just a screen.',
     durationMin: 45,
@@ -147,12 +166,54 @@ const PRODUCT: TRung[] = [
       'What is the team you are on now wrong about?',
     ],
   },
+  {
+    kind: 'pd_offer',
+    no: 7,
+    label: 'Offer rollout',
+    purpose:
+      'The hiring manager makes the offer. Not an assessment — the decision is already made, and this is the conversation that lands it.',
+    durationMin: 30,
+    owners: ['Rahul'],
+    track: 'product',
+    // Nothing to score. The outcome of this round is the candidate's status —
+    // offer rollout, then hired or offer dropped — not a mark out of four, and
+    // an empty scorecard is more honest than inventing signals for a
+    // conversation that is not judging anybody.
+    signals: [],
+    prompts: [
+      'Here is the offer: level, comp, start date.',
+      'What were you hoping for, and where is the gap?',
+      'What would make this an easy yes?',
+      'Who else are you talking to, and when do they get back to you?',
+      'What do you need from us to decide?',
+      'When can you tell us?',
+    ],
+  },
 ];
 
 const VISUAL: TRung[] = [
   {
-    kind: 'vd_portfolio',
+    kind: 'vd_hr',
     no: 1,
+    label: 'HR round',
+    purpose:
+      'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
+    durationMin: 30,
+    owners: ['HR'],
+    track: 'visual',
+    signals: ['communication', 'ambition'],
+    prompts: [
+      'What are you working on right now, and what pulled you to look?',
+      'What kind of problem do you want to be holding in two years?',
+      'Scope, level, market, comp band. Say the numbers out loud.',
+      'Notice period, and anything else in flight?',
+      'What does a good design team look like to you — and a bad one?',
+      'What do you want to know about us?',
+    ],
+  },
+  {
+    kind: 'vd_portfolio',
+    no: 2,
     label: 'Portfolio',
     purpose: 'The work itself, and whether they can say why it looks the way it does.',
     durationMin: 60,
@@ -169,8 +230,31 @@ const VISUAL: TRung[] = [
     ],
   },
   {
+    kind: 'vd_motion',
+    no: 3,
+    label: 'Motion ⇄ Visual',
+    purpose:
+      'How the work is built, not how it looks. Saswata opens the file: is the illustration layered so it can move, or is it one flat thing that has to be redrawn to animate?',
+    durationMin: 45,
+    owners: ['Saswata'],
+    track: 'visual',
+    // Craft and systems, not communication. The subject is the file — how it is
+    // constructed and whether the next person can pick it up — and that is the
+    // same question the design system asks of a component.
+    signals: ['craft', 'systems'],
+    prompts: [
+      'Open the file for the piece you are proudest of. Show me the layer stack.',
+      'Which parts of this were you thinking about in motion while you drew them?',
+      'What would you have to redo to make this animate?',
+      'How do you name and group things so somebody else can take it on?',
+      'Show me something you built for motion from the start. What changed in how you drew it?',
+      'Where does handing off to a motion designer usually go wrong?',
+      'What do you want from us to make that handoff smoother?',
+    ],
+  },
+  {
     kind: 'vd_working',
-    no: 2,
+    no: 4,
     label: 'Working session',
     purpose: 'Making something together, live. How they take direction and how they push back.',
     durationMin: 90,
@@ -188,7 +272,7 @@ const VISUAL: TRung[] = [
   },
   {
     kind: 'vd_product',
-    no: 3,
+    no: 5,
     label: 'Product round',
     purpose: 'Whether the work is doing a job, not just looking right.',
     durationMin: 45,
@@ -206,7 +290,7 @@ const VISUAL: TRung[] = [
   },
   {
     kind: 'vd_culture',
-    no: 4,
+    no: 6,
     label: 'Culture fit',
     purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
@@ -220,6 +304,29 @@ const VISUAL: TRung[] = [
       'What kind of problem do you want to be holding in two years?',
       'What would make you leave a job you liked?',
       'What do you want to know about us?',
+    ],
+  },
+  {
+    kind: 'vd_offer',
+    no: 7,
+    label: 'Offer rollout',
+    purpose:
+      'The hiring manager makes the offer. Not an assessment — the decision is already made, and this is the conversation that lands it.',
+    durationMin: 30,
+    owners: ['Rahul'],
+    track: 'visual',
+    // Nothing to score. The outcome of this round is the candidate's status —
+    // offer rollout, then hired or offer dropped — not a mark out of four, and
+    // an empty scorecard is more honest than inventing signals for a
+    // conversation that is not judging anybody.
+    signals: [],
+    prompts: [
+      'Here is the offer: level, comp, start date.',
+      'What were you hoping for, and where is the gap?',
+      'What would make this an easy yes?',
+      'Who else are you talking to, and when do they get back to you?',
+      'What do you need from us to decide?',
+      'When can you tell us?',
     ],
   },
 ];

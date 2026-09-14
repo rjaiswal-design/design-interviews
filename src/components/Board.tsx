@@ -119,6 +119,7 @@ const Board = ({ mode }: TProps) => {
   const candidates = useStore((s) => s.candidates);
   const rounds = useStore((s) => s.rounds);
   const patchCandidate = useStore((s) => s.patchCandidate);
+  const patchRound = useStore((s) => s.patchRound);
   const addCandidate = useStore((s) => s.addCandidate);
   const events = useStore((s) => s.events);
 
@@ -479,34 +480,53 @@ const Board = ({ mode }: TProps) => {
                       <td className="panel-cell">{c.role || <span className="none">—</span>}</td>
 
                       <td className="rung-cell">
-                        {/* Where they are and what is happening there.
-                            One row per candidate means this column carries the
-                            whole answer to "where is everyone", so it needs the
-                            status as well as the name — which is also why the
-                            Status column that used to sit here was redundant
-                            and this is not. */}
+                        {/* Where they are, and the one control that moves them
+                            on. One row per candidate means this column carries
+                            the whole answer to "where is everyone" — which is
+                            also why the Status column that used to sit beside
+                            it was redundant and this is not.
+
+                            The name and the status are two controls, not one:
+                            a select nested inside a button is invalid markup
+                            and, more to the point, opening the round and
+                            advancing it are different intentions. */}
                         {where.done ? (
                           <span className="rung-done">
                             <span className="lb">All rounds done</span>
                             <span className="sub">Waiting on a decision</span>
                           </span>
                         ) : rg && where.round ? (
-                          <button
-                            type="button"
-                            className="rung-open"
-                            onClick={() => go({ view: 'room', id: where.round?.id ?? '' })}
-                            title="Open this round — link, script, scorecard, transcript, log"
-                          >
-                            <span className="lb">{rg.label}</span>
-                            <span className="sub">
-                              {STATUS_LABELS[where.round.status]}
-                              {where.round.scheduledAt
-                                ? ` · ${relative(where.round.scheduledAt)}`
-                                : where.round.status === 'scheduled'
-                                  ? ' · no date yet'
-                                  : ''}
+                          <>
+                            <button
+                              type="button"
+                              className="rung-open"
+                              onClick={() => go({ view: 'room', id: where.round?.id ?? '' })}
+                              title="Open this round — link, script, scorecard, transcript, log"
+                            >
+                              <span className="lb">{rg.label}</span>
+                            </button>
+                            <span className="rung-foot">
+                              {/* Marking this one complete is what moves them
+                                  on: `whereNow` then names the next round owed
+                                  and the row redraws around it. */}
+                              <Pill<TRoundStatus>
+                                value={where.round.status}
+                                options={ROUND_STATUSES}
+                                labels={STATUS_LABELS}
+                                onChange={(v) =>
+                                  void patchRound(where.round?.id ?? '', { status: v })
+                                }
+                                title="Complete this round to move them to the next"
+                              />
+                              <span className="when">
+                                {where.round.scheduledAt
+                                  ? relative(where.round.scheduledAt)
+                                  : where.round.status === 'scheduled'
+                                    ? 'no date yet'
+                                    : ''}
+                              </span>
                             </span>
-                          </button>
+                          </>
                         ) : (
                           <span className="none">No rounds</span>
                         )}
