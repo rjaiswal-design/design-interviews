@@ -35,12 +35,32 @@ scripts, and their signals. Editing that file is how the process changes, and
 the app reconciles stored candidates against it on open (see **Retiring a
 round** below).
 
+**Live:** https://design-interviews.vercel.app ·
+**Repo:** https://github.com/rjaiswal-design/design-interviews (private)
+
+Pushes to `main` deploy automatically.
+
 ## Running it
 
 ```bash
 npm install
 npm run dev     # http://localhost:5240
 ```
+
+## Who you are
+
+On first run the app asks for a name and an email before anything else, on any
+route — a deep link straight to a round is a normal first visit, and an edit
+made from it would go into the log attributed to nobody.
+
+The name is what a log line reads as. The **email is the part that stays
+attributable**: names collide and change, and the address is the stable key that
+maps onto a real account once there is auth behind this. Recording it now means
+the log written today still means something then.
+
+Nothing verifies either, and the dialog says so. It is stored in
+`localStorage`, never sent anywhere, and [`src/lib/me.ts`](src/lib/me.ts) is the
+one module real identity replaces.
 
 ## Where things are
 
@@ -270,10 +290,33 @@ A column nothing maps to is reported rather than dropped silently, and an
 unparseable date leaves the round unscheduled rather than landing it on an
 invented day. Imports add; nothing already on the board is touched.
 
+## Wiring it to Supabase
+
+It is deployed but not yet shared: everything lives in the viewer's own
+IndexedDB, so the board on the live URL is private to whoever opens it. That is
+a real step — the UI and the whole model are settled and exercised — but it is
+not the tool yet.
+
+[`src/lib/db.ts`](src/lib/db.ts) is the only file that knows where data lives.
+Pointing it at Supabase means reimplementing its functions against four tables
+that mirror the object stores — `candidates`, `rounds`, `segments`, `events` —
+and nothing above it changes: the store already treats every call as async and
+already refetches after a write, so a network round-trip changes no caller.
+
+Three things to decide when the project exists:
+
+1. **Auth.** `me.ts` becomes a read of the session user, and `TEvent.actorEmail`
+   stops being self-declared — which is the point of having recorded it.
+2. **`events` is append-only.** Nothing in the app updates or deletes a log line
+   except removing the candidate it belongs to. That should be a policy, not a
+   convention.
+3. **Row-level security on `segments`.** A transcript is the most sensitive
+   thing here; it should be readable by the hiring team and nobody else.
+
 ## What this does not do yet
 
 - **No shared backend.** Everything is in this browser's IndexedDB, so the
-  record is per-machine. `db.ts` is the seam for fixing that.
+  record is per-machine. `db.ts` is the seam for fixing that — see above.
 - **Nothing fetches the transcript for you.** Somebody has to download it from
   the meeting and paste it in. A Zoom API integration would remove that step and
   is the obvious next thing; the parser already handles what Zoom exports.
