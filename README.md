@@ -20,7 +20,7 @@ walks all of it.
 
 | # | Round | Who runs it | Judges |
 |---|-------|-------------|--------|
-| 1 | HR round | HR | Communication, Ambition |
+| 1 | HR round | Rahul & Aanchal | Communication, Ambition |
 | 2 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
 | 3 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
 | 4 | AI coding | Arnab | Craft, Systems, Product thinking |
@@ -32,7 +32,7 @@ walks all of it.
 
 | # | Round | Who runs it | Judges |
 |---|-------|-------------|--------|
-| 1 | HR round | HR | Communication, Ambition |
+| 1 | HR round | Rahul & Aanchal | Communication, Ambition |
 | 2 | Portfolio | Sanket / Jithin | Craft, Communication |
 | 3 | Motion ⇄ Visual | Saswata | Craft, Systems |
 | 4 | Working session | Tamanna | Craft, Collaboration, Communication |
@@ -42,6 +42,13 @@ walks all of it.
 
 The **HR round** comes first so scope, level, market and money are said out loud
 before anyone spends an hour on a portfolio.
+
+`owners` distinguishes a pair from a choice, and `TRung.either` is the flag.
+"Rahul & Aanchal" both sit in the HR round; "Sanket / Jithin" means either of
+them takes the portfolio. It is not decoration — it decides what a new round is
+pre-assigned to. Booking two people into a round only one of them will run is a
+panel somebody has to correct; leaving one name off a round two people attend is
+a panel that is simply wrong.
 
 **Motion ⇄ Visual** is about the file rather than the picture: whether an
 illustration is layered so it can move, or is one flat thing that has to be

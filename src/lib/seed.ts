@@ -251,8 +251,9 @@ export const buildSeed = (): {
         id: roundId,
         candidateId: id,
         kind: r.kind,
-        // The rung's own owner, which is the point of having them.
-        interviewers: [...r.owners],
+        // The rung's own owner, which is the point of having them. A choice
+        // takes the first name; a pair takes both. See `TRung.either`.
+        interviewers: r.either ? r.owners.slice(0, 1) : [...r.owners],
         scheduledAt: step ? now + step.offsetDays * DAY + (j % 3) * HOUR : 0,
         durationMin: r.durationMin,
         status: step?.status ?? 'scheduled',

@@ -37,6 +37,19 @@ export type TRung = {
   durationMin: number;
   /** Who runs it by default. */
   owners: string[];
+  /**
+   * Whether `owners` is a choice or a pair.
+   *
+   * "Sanket / Jithin" means either of them takes the round; "Rahul & Aanchal"
+   * means both sit in it. The difference is not decoration — it decides what a
+   * new round is pre-assigned to. Booking two people into a round only one of
+   * them is going to run is a panel somebody has to correct, and leaving one
+   * name off a round two people attend is a panel that is simply wrong.
+   *
+   * Absent means a pair, because that is the common case and the loud one to
+   * get wrong.
+   */
+  either?: boolean;
   signals: TSignal[];
   /** The script. A spine, not a questionnaire. */
   prompts: string[];
@@ -61,7 +74,7 @@ const PRODUCT: TRung[] = [
     purpose:
       'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
     durationMin: 30,
-    owners: ['HR'],
+    owners: ['Rahul', 'Aanchal'],
     track: 'product',
     signals: ['communication', 'ambition'],
     prompts: [
@@ -199,7 +212,7 @@ const VISUAL: TRung[] = [
     purpose:
       'Is there a role here, and do they want it? Scope, level, market and money, said out loud before anyone spends an hour on a portfolio.',
     durationMin: 30,
-    owners: ['HR'],
+    owners: ['Rahul', 'Aanchal'],
     track: 'visual',
     signals: ['communication', 'ambition'],
     prompts: [
@@ -218,6 +231,7 @@ const VISUAL: TRung[] = [
     purpose: 'The work itself, and whether they can say why it looks the way it does.',
     durationMin: 60,
     owners: ['Sanket', 'Jithin'],
+    either: true,
     track: 'visual',
     signals: ['craft', 'communication'],
     prompts: [

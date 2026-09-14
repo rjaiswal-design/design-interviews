@@ -80,11 +80,15 @@ const PipelineView = () => {
                         <span className="mins">{r.durationMin}m</span>
                       </div>
 
+                      {/* "/" for a choice, "&" for a pair — see `TRung.either`.
+                          One of these rounds is run by either of two people and
+                          another is run by both, and a slash in front of both
+                          reads as the first. */}
                       <p className="who-runs">
                         {r.owners.length > 0 ? (
                           r.owners.map((o, i) => (
                             <span key={o}>
-                              {i > 0 && <span className="or"> / </span>}
+                              {i > 0 && <span className="or">{r.either ? ' / ' : ' & '}</span>}
                               <span className="owner">{o}</span>
                             </span>
                           ))

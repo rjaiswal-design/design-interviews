@@ -100,7 +100,7 @@ const stamp = <T extends { updatedAt: number }>(row: T): T => ({ ...row, updated
  *  field added to the row otherwise has to be remembered in all three. */
 const blankRound = (
   candidateId: string,
-  rung: { kind: TRound['kind']; durationMin: number; owners: string[] },
+  rung: { kind: TRound['kind']; durationMin: number; owners: string[]; either?: boolean },
 ): TRound => {
   const now = Date.now();
   return {
@@ -110,7 +110,11 @@ const blankRound = (
     // Pre-assigned to whoever runs this round. "Portfolio with Ayaneshu" is how
     // the process is described out loud, and an unassigned round is one nobody
     // is going to book. Editable on the round like any other panel.
-    interviewers: [...rung.owners],
+    //
+    // A pair gets both names; a choice gets the first, because booking two
+    // people into a round only one of them will run is a panel somebody has to
+    // correct. See `TRung.either`.
+    interviewers: rung.either ? rung.owners.slice(0, 1) : [...rung.owners],
     scheduledAt: 0,
     durationMin: rung.durationMin,
     status: 'scheduled',

@@ -202,8 +202,13 @@ export const importRows = (text: string, startRef: number): TImportResult => {
           candidateId: id,
           kind: rung.kind,
           // The file's panel on round one if it named anyone, otherwise the
-          // rung's own owner.
-          interviewers: j === 0 && panel.length > 0 ? panel : [...rung.owners],
+          // rung's own owner — first name only where the rung is a choice.
+          interviewers:
+            j === 0 && panel.length > 0
+              ? panel
+              : rung.either
+                ? rung.owners.slice(0, 1)
+                : [...rung.owners],
           scheduledAt: j === 0 ? first : 0,
           durationMin: rung.durationMin,
           status: 'scheduled',
