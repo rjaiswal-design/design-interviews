@@ -664,6 +664,18 @@ a.bar-btn { text-decoration: none; }
 
 .chip .v { font-weight: 600; }
 
+/* The count on a tag. Tabular so two of them line up, and quiet so the tag
+   still reads as its label first. */
+.chip .n {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+.chip[data-active='true'] .n {
+  color: var(--color-ink);
+}
+
 .chip .caret {
   color: var(--color-muted);
   transition: transform 200ms var(--ease-out);

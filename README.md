@@ -258,8 +258,15 @@ done · Waiting on a decision**, which is the one row on it asking somebody to
 act. The funnel band's "In rounds" uses the same predicate, so the count and the
 number of rows under it cannot disagree.
 
-Filters: **Track** and **Round**/**Status** match where they are *now*, which is
-what the column shows. **Panel** matches anywhere on their ladder — scoped to
+**Track is two tags, not a dropdown** — `Product design 3` / `Visual design 3`,
+lit when active, and clicking the lit one clears it. A menu for a two-value
+filter costs a click to open and a click to choose, and hides both options until
+you do, when the whole point is that there are exactly two and you want one of
+them. The count on each tag is the live population of that track, so it is the
+number of rows the tag gives you.
+
+**Round** and **Status** match where somebody is *now*, which is what the column
+shows. **Panel** matches anywhere on their ladder — scoped to
 the current round it would hide a candidate whose portfolio you ran and who has
 since moved on, which is exactly who you want to find.
 

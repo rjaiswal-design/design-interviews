@@ -10,7 +10,14 @@ import { go } from '../lib/route';
 import { httpUrl } from '../lib/url';
 import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, isLive } from '../lib/candidateStatus';
 import { useStore } from '../lib/store';
-import type { TCandidate, TCandidateStatus, TEvent, TRound, TRoundStatus } from '../types';
+import type {
+  TCandidate,
+  TCandidateStatus,
+  TEvent,
+  TRound,
+  TRoundStatus,
+  TTrack,
+} from '../types';
 import FilterChip from './FilterChip';
 import { Caret, Close, Download, Search } from './Icons';
 import { LadderMini } from './LadderTrack';
@@ -172,6 +179,17 @@ const Board = ({ mode }: TProps) => {
     for (const e of events) if (!m.has(e.candidateId)) m.set(e.candidateId, e);
     return m;
   }, [events]);
+
+  /** Live candidates per track, for the tag counts — the same population the
+   *  board draws, so the number on the tag is the number of rows it gives you. */
+  const liveByTrack = useMemo(() => {
+    const m = new Map<TTrack, number>();
+    for (const c of candidates) {
+      if (!isLive(c.status)) continue;
+      m.set(c.track, (m.get(c.track) ?? 0) + 1);
+    }
+    return m;
+  }, [candidates]);
 
   const liveCandidates = useMemo(
     () => new Set(rounds.filter((r) => r.status === 'in_progress').map((r) => r.candidateId)),
@@ -344,16 +362,27 @@ const Board = ({ mode }: TProps) => {
 
         {mode === 'rounds' && (
           <>
-            <FilterChip
-              label="Track"
-              value={fTrack}
-              onChange={setFTrack}
-              options={TRACKS.map((t) => ({
-                value: t,
-                label: TRACK_LABELS[t],
-                n: rounds.filter((x) => byId.get(x.candidateId)?.track === t).length,
-              }))}
-            />
+            {/* Two tags rather than a dropdown. A menu for a two-value filter
+                costs a click to open and a click to choose, and hides both
+                options until you do — when the whole point of a track filter is
+                that there are exactly two and you want one of them.
+
+                Clicking the lit one clears it, which is what "Any" was doing
+                inside the menu. The count is on the tag because that is the
+                number you are choosing between. */}
+            {TRACKS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="chip"
+                data-active={fTrack === t}
+                onClick={() => setFTrack(fTrack === t ? '' : t)}
+                title={fTrack === t ? `Showing ${TRACK_LABELS[t]} only — click to clear` : `Show ${TRACK_LABELS[t]} only`}
+              >
+                <span className="v">{TRACK_LABELS[t]}</span>
+                <span className="n">{liveByTrack.get(t) ?? 0}</span>
+              </button>
+            ))}
             <FilterChip
               label="Round"
               value={fRung}
