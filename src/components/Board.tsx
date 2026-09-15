@@ -243,35 +243,37 @@ const Board = ({ mode }: TProps) => {
 
   const exportCandidatesCsv = () => {
     const rows: (string | number)[][] = [
+      // Same order as the table, plus the two things the table does not have
+      // room for: the track, and the LinkedIn beside the portfolio.
       [
         'ref',
         'candidate',
-        'track',
+        'source',
+        'current title',
         'applying for',
+        'company',
+        'portfolio',
+        'linkedin',
         'status',
+        'track',
         'location',
         'email',
         'phone',
-        'portfolio',
-        'linkedin',
-        'company',
-        'their title',
-        'source',
       ],
       ...visiblePeople.map((c) => [
         c.ref,
         c.name,
-        TRACK_LABELS[c.track],
+        c.source,
+        c.previousPosition,
         c.role,
+        c.previousCompany,
+        c.portfolio,
+        c.linkedin,
         CANDIDATE_STATUS_LABELS[c.status],
+        TRACK_LABELS[c.track],
         c.location,
         c.email,
         c.phone,
-        c.portfolio,
-        c.linkedin,
-        c.previousCompany,
-        c.previousPosition,
-        c.source,
       ]),
     ];
     download('candidates.csv', toCsv(rows));
@@ -576,7 +578,7 @@ const Board = ({ mode }: TProps) => {
             )}
           </div>
         ) : (
-          <table className="log" style={{ minWidth: 1500 }}>
+          <table className="log" style={{ minWidth: 1400 }}>
             <thead>
               {/*
                 * This view is about the person, not their progress.
@@ -590,23 +592,26 @@ const Board = ({ mode }: TProps) => {
               <tr>
                 <th className="col-ref">Ref</th>
                 <th className="col-who">Candidate</th>
-                <th style={{ width: 130 }}>Track</th>
+                {/* What they do now, what they are up for, and where they do
+                    it — in that order, because that is the sentence somebody
+                    reads to place a candidate: "Senior Product Designer at
+                    Zomato, up for Senior Product Designer here". Then the
+                    portfolio and the status, which are what you act on. */}
+                <th style={{ width: 170 }}>Current title</th>
                 <th className="col-role">Applying for</th>
-                {/* "Status", not "Where" — that read fine until there was a
-                    real Location column beside it. */}
+                <th style={{ width: 160 }}>Company</th>
+                <th style={{ width: 104 }}>Portfolio</th>
                 <th style={{ width: 140 }}>Status</th>
                 <th style={{ width: 120 }}>Location</th>
                 <th style={{ width: 190 }}>Email</th>
                 <th style={{ width: 150 }}>Phone</th>
-                <th style={{ width: 104 }}>Portfolio</th>
-                <th style={{ width: 150 }}>Company</th>
-                <th style={{ width: 180 }}>Their title</th>
               </tr>
             </thead>
             <tbody>
               {visiblePeople.map((c) => (
                   <tr key={c.id}>
                     <td className="cell-ref">#{c.ref}</td>
+
                     <td>
                       <button
                         type="button"
@@ -616,64 +621,29 @@ const Board = ({ mode }: TProps) => {
                         <span className="av u-circle">{initials(c.name) || '—'}</span>
                         <span className="lines">
                           <span className="nm">{c.name || 'Unnamed'}</span>
-                          {/* Level and where they came from. The opening has
-                              its own column, so the sub-line carries the two
-                              facts that are about the person rather than the
-                              req — and how someone reached us is the one that
+                          {/* How they reached us, which is the fact that
                               decides who chases them. */}
                           <span className="rl">{c.source}</span>
                         </span>
                       </button>
                     </td>
-                    {/* Which ladder they walk — it decides their rounds and who
-                        runs them, so it is a column and not a detail. */}
-                    <td className="panel-cell">{TRACK_LABELS[c.track]}</td>
-                    <td className="panel-cell">{c.role || <span className="none">—</span>}</td>
-                    <td>
-                      {/* The most load-bearing column on this view. Without it
-                          a rejected candidate with no rounds booked is drawn
-                          exactly like a new one nobody has scheduled yet. */}
-                      <Pill<TCandidateStatus>
-                        value={c.status}
-                        options={CANDIDATE_STATUSES}
-                        labels={CANDIDATE_STATUS_LABELS}
-                        onChange={(v) => void patchCandidate(c.id, { status: v })}
-                        title="Where they are in the funnel"
-                      />
-                    </td>
-                    <td className="panel-cell">
-                      {c.location || <span className="none">—</span>}
-                    </td>
-                    {/* Both reachable in one click. A hiring board's contact
-                        details exist to be used, and asking someone to select
-                        and copy a cell is asking them to open their mail client
-                        by hand. */}
-                    <td className="panel-cell">
-                      {c.email ? (
-                        <a className="quiet-link" href={`mailto:${c.email}`}>
-                          {c.email}
-                        </a>
-                      ) : (
-                        <span className="none">—</span>
-                      )}
-                    </td>
-                    <td className="panel-cell cell-phone">
-                      {c.phone ? (
-                        <a className="quiet-link" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
-                          {c.phone}
-                        </a>
-                      ) : (
-                        <span className="none">—</span>
-                      )}
-                    </td>
-                    {/* The portfolio, not the LinkedIn. Both are on the
-                        record and both are in the export; this is the column,
-                        because for a design hire the portfolio is the link
-                        somebody actually opens.
 
-                        The link, not the URL: a portfolio address is a slug and
-                        often a string of tracking parameters, and pasting one
-                        into a column makes every other column unreadable. */}
+                    <td className="panel-cell">
+                      {c.previousPosition || <span className="none">—</span>}
+                    </td>
+
+                    <td className="panel-cell">{c.role || <span className="none">—</span>}</td>
+
+                    <td className="panel-cell">
+                      {c.previousCompany || <span className="none">—</span>}
+                    </td>
+
+                    {/* The link, not the URL: a portfolio address is a slug and
+                        often a string of tracking parameters, and dropping one
+                        into a column makes every other column unreadable.
+                        LinkedIn is on the record and in the export; this is the
+                        column, because for a design hire the portfolio is the
+                        link somebody actually opens. */}
                     <td className="panel-cell">
                       {httpUrl(c.portfolio) ? (
                         <a
@@ -688,11 +658,46 @@ const Board = ({ mode }: TProps) => {
                         <span className="none">—</span>
                       )}
                     </td>
-                    <td className="panel-cell">
-                      {c.previousCompany || <span className="none">—</span>}
+
+                    <td>
+                      {/* The most load-bearing column on this view. Without it
+                          a rejected candidate with no rounds booked is drawn
+                          exactly like a new one nobody has scheduled yet. */}
+                      <Pill<TCandidateStatus>
+                        value={c.status}
+                        options={CANDIDATE_STATUSES}
+                        labels={CANDIDATE_STATUS_LABELS}
+                        onChange={(v) => void patchCandidate(c.id, { status: v })}
+                        title="Where they are in the funnel"
+                      />
                     </td>
+
                     <td className="panel-cell">
-                      {c.previousPosition || <span className="none">—</span>}
+                      {c.location || <span className="none">—</span>}
+                    </td>
+
+                    {/* Both reachable in one click. A hiring board's contact
+                        details exist to be used, and asking somebody to select
+                        and copy a cell is asking them to open their mail client
+                        by hand. */}
+                    <td className="panel-cell">
+                      {c.email ? (
+                        <a className="quiet-link" href={`mailto:${c.email}`}>
+                          {c.email}
+                        </a>
+                      ) : (
+                        <span className="none">—</span>
+                      )}
+                    </td>
+
+                    <td className="panel-cell cell-phone">
+                      {c.phone ? (
+                        <a className="quiet-link" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
+                          {c.phone}
+                        </a>
+                      ) : (
+                        <span className="none">—</span>
+                      )}
                     </td>
                   </tr>
               ))}

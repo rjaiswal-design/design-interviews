@@ -1172,12 +1172,10 @@ table.log {
 
 /* The funnel.
    `pending` is the absence of a decision, so it is drawn as an outline — set
-   aside rather than ranked, the same treatment the retired priority used.
-   `shortlisted` takes the ink: it is the only state that means work is owed.
-   Colour then tracks the ending — amber while an offer is in the air, green
-   and solid for the one terminal success, red for the offer that got away,
-   and the closed grey for a rejection, which is a normal outcome and should
-   not read as a failure of the system. */
+   aside rather than ranked. Everything after it is colour: green while they are
+   in it or hired, amber while an offer is in the air, red once they are not
+   coming. Two greens and two reds, told apart by fill and by ring rather than
+   by hue, because the pairs really are the same news at different stages. */
 .s-pending {
   color: var(--color-muted);
   background: transparent;
@@ -1187,12 +1185,25 @@ table.log {
   background: transparent;
   box-shadow: inset 0 0 0 1px currentColor;
 }
-.s-shortlisted { color: var(--color-ink); background: rgb(0 0 0 / 0.06); }
+.s-shortlisted { color: var(--color-open); background: var(--color-open-bg); }
 .s-offer_out { color: var(--color-draft); background: var(--color-draft-bg); }
+
+/* Green twice, and the difference is the fill. Shortlisted is a tint — good
+   news, still moving; hired is solid — good news, finished. Same relationship
+   the call pills use between `yes` and `strong_yes`. */
 .s-hired { color: #fff; background: var(--color-open); }
 .s-hired .dot { background: #fff; }
-.s-offer_dropped { color: var(--color-fail); background: var(--color-fail-bg); }
-.s-rejected { color: var(--color-closed); background: var(--color-closed-bg); }
+
+/* Red twice, and the difference is the ring, which is how `strong_yes` is told
+   from `yes` already. Rejected is the ordinary outcome: we said no. Offer
+   dropped is the one that costs — the loop was run, the offer went out, and
+   they went elsewhere — so it carries the extra mark. */
+.s-rejected { color: var(--color-fail); background: var(--color-fail-bg); }
+.s-offer_dropped {
+  color: var(--color-fail);
+  background: var(--color-fail-bg);
+  box-shadow: inset 0 0 0 1px rgb(220 38 38 / 0.35);
+}
 
 /* ── the latest-activity cell ───────────────────────────────────────────────
    A row of the trail at row height: the sentence on top, who and when under

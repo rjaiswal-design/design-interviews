@@ -384,7 +384,7 @@ understood:
 | phone | mobile, tel, telephone, contact number |
 | linkedin | linkedin url, linkedin profile, profile |
 | company | current employer, employer, organisation, org |
-| their title | job title, title, current role, designation |
+| current title | their title, job title, title, current role, designation |
 | scheduled_at | date, first round, interview date, when |
 | interviewer | interviewers, panel, owner, assigned to |
 

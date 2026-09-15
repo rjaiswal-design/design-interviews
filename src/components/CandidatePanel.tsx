@@ -317,7 +317,7 @@ const CandidatePanel = ({
                 />
               </dd>
 
-              <dt>Their title</dt>
+              <dt>Current title</dt>
               <dd>
                 {/* Their own title, not the opening. A Staff designer at Careem
                     can be up for an IC4 role here and both facts matter. */}

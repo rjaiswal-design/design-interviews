@@ -51,6 +51,7 @@ const FIELDS: Record<string, string[]> = {
    *  knows whether it is filling a product or a visual opening. */
   track: ['track', 'discipline', 'ladder', 'pipeline', 'team', 'craft'],
   previousPosition: [
+    'currenttitle',
     'theirtitle',
     'currenttitle',
     'currentrole',
@@ -228,6 +229,6 @@ export const importRows = (text: string, startRef: number): TImportResult => {
 };
 
 /** The header the importer is happiest with, for the dialog to show. */
-export const SAMPLE_CSV = `name,applying for,email,phone,linkedin,company,their title,source,status,scheduled_at,interviewer
+export const SAMPLE_CSV = `name,applying for,email,phone,linkedin,company,current title,source,status,scheduled_at,interviewer
 Noor Al-Hashimi,"Product Designer, noonFood",Senior,noor@example.com,+971 50 412 8837,Careem,Staff Product Designer,Referral,active,2026-09-16 14:30,Rahul Jaiswal
 Tanvi Rao,"Design Systems, Platform",IC4,tanvi@example.com,+91 98455 22106,Razorpay,Design Systems Lead,Inbound,active,2026-09-17 11:00,Soumya Nair`;
