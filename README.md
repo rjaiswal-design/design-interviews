@@ -24,7 +24,7 @@ walks all of it.
 | 2 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
 | 3 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
 | 4 | AI coding | Arnab | Craft, Systems, Product thinking |
-| 5 | Culture fit | Ayush | Ambition, Collaboration |
+| 5 | Head of design | Ayush | Ambition, Collaboration |
 | 6 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
 | 7 | Offer rollout | Aanchal & Rahul | — |
 
@@ -34,10 +34,10 @@ walks all of it.
 |---|-------|-------------|--------|
 | 1 | HR round | HR executive | Communication, Ambition |
 | 2 | Portfolio discussion | Tamanna | Craft, Communication |
-| 3 | Working session | Sanket & Jaden | Craft, Collaboration, Communication |
+| 3 | Working session | Sanket & Jithin | Craft, Collaboration, Communication |
 | 4 | Motion ⇄ Visual | Saswata | Craft, Systems |
 | 5 | Product round | Rahul | Product thinking, Systems, Communication |
-| 6 | Culture fit | Ayush | Ambition, Collaboration |
+| 6 | Head of design | Ayush | Ambition, Collaboration |
 | 7 | Offer rollout | Aanchal & Rahul | — |
 
 The **HR round** comes first so scope, level, market and money are said out loud
@@ -47,7 +47,7 @@ an owner is for: a sensible default for the panel, not a claim about who is in
 the room, and the actual name goes on the round when it is booked.
 
 `owners` distinguishes a pair from a choice, and `TRung.either` is the flag.
-"Aanchal & Rahul" both sit in the offer rollout, as do "Sanket & Jaden" in the
+"Aanchal & Rahul" both sit in the offer rollout, as do "Sanket & Jithin" in the
 working session; a slash would mean either one of them takes it. It is not decoration — it decides what a new round is
 pre-assigned to. Booking two people into a round only one of them will run is a
 panel somebody has to correct; leaving one name off a round two people attend is
@@ -71,7 +71,7 @@ and an unassigned round is one nobody is going to book. The panel on any round
 stays editable.
 
 `signals` is what a round is *qualified* to judge, and it is load-bearing.
-Scoring craft in the culture round is the failure mode it prevents: every
+Scoring craft in the head-of-design round is the failure mode it prevents: every
 interviewer scoring every signal produces six averages and no information,
 because most were guesses from people who never saw the work.
 

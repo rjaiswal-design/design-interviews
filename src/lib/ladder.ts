@@ -23,7 +23,7 @@ import type {
  * It is a default, not a rule: the panel on any round is editable.
  *
  * `signals` is what a round is qualified to judge, and it is load-bearing.
- * Scoring craft in the culture round is the failure mode it prevents: every
+ * Scoring craft in the head-of-design round is the failure mode it prevents: every
  * interviewer scoring every signal produces six averages and no information,
  * because most were guesses from people who never saw the work.
  */
@@ -150,7 +150,7 @@ const PRODUCT: TRung[] = [
   {
     kind: 'pd_culture',
     no: 5,
-    label: 'Culture fit',
+    label: 'Head of design',
     purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
     owners: ['Ayush'],
@@ -253,7 +253,7 @@ const VISUAL: TRung[] = [  {
     label: 'Working session',
     purpose: 'Making something together, live. How they take direction and how they push back.',
     durationMin: 90,
-    owners: ['Sanket', 'Jaden'],
+    owners: ['Sanket', 'Jithin'],
     track: 'visual',
     signals: ['craft', 'collaboration', 'communication'],
     prompts: [
@@ -306,7 +306,7 @@ const VISUAL: TRung[] = [  {
   },  {
     kind: 'vd_culture',
     no: 6,
-    label: 'Culture fit',
+    label: 'Head of design',
     purpose: 'Whether they make the people around them better, and want to be here.',
     durationMin: 45,
     owners: ['Ayush'],

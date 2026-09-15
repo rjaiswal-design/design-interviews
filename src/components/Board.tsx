@@ -60,7 +60,7 @@ type TProps = {
  *
  * Everything complete is its own answer rather than the last round again. They
  * are through the loop and waiting on a decision, which is a different thing
- * from being at culture fit, and the one state where the board should be
+ * from being at the head-of-design round, and the one state where the board should be
  * telling somebody to act.
  */
 type TWhere = { round?: TRound; done: boolean };
@@ -388,7 +388,7 @@ const Board = ({ mode }: TProps) => {
               value={fRung}
               onChange={setFRung}
               // Nine rungs across two ladders, so each is prefixed with its
-              // track — there is a "Portfolio" and a "Culture fit" on both.
+              // track — there is a "Portfolio" and a "Head of design" on both.
               options={LADDER.map((r) => ({
                 value: r.kind,
                 label: `${r.track === 'visual' ? 'VD' : 'PD'} ${r.no}. ${r.label}`,
