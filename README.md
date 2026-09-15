@@ -33,9 +33,9 @@ walks all of it.
 | # | Round | Who runs it | Judges |
 |---|-------|-------------|--------|
 | 1 | HR round | HR executive | Communication, Ambition |
-| 2 | Portfolio | Sanket / Jithin | Craft, Communication |
-| 3 | Motion ⇄ Visual | Saswata | Craft, Systems |
-| 4 | Working session | Tamanna | Craft, Collaboration, Communication |
+| 2 | Portfolio discussion | Tamanna | Craft, Communication |
+| 3 | Working session | Sanket & Jaden | Craft, Collaboration, Communication |
+| 4 | Motion ⇄ Visual | Saswata | Craft, Systems |
 | 5 | Product round | Rahul | Product thinking, Systems, Communication |
 | 6 | Culture fit | Ayush | Ambition, Collaboration |
 | 7 | Offer rollout | Aanchal & Rahul | — |
@@ -47,8 +47,8 @@ an owner is for: a sensible default for the panel, not a claim about who is in
 the room, and the actual name goes on the round when it is booked.
 
 `owners` distinguishes a pair from a choice, and `TRung.either` is the flag.
-"Aanchal & Rahul" both sit in the offer rollout; "Sanket / Jithin" means either
-of them takes the portfolio. It is not decoration — it decides what a new round is
+"Aanchal & Rahul" both sit in the offer rollout, as do "Sanket & Jaden" in the
+working session; a slash would mean either one of them takes it. It is not decoration — it decides what a new round is
 pre-assigned to. Booking two people into a round only one of them will run is a
 panel somebody has to correct; leaving one name off a round two people attend is
 a panel that is simply wrong.

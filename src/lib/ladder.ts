@@ -208,8 +208,7 @@ const PRODUCT: TRung[] = [
   },
 ];
 
-const VISUAL: TRung[] = [
-  {
+const VISUAL: TRung[] = [  {
     kind: 'vd_hr',
     no: 1,
     label: 'HR round',
@@ -231,15 +230,13 @@ const VISUAL: TRung[] = [
       'What does a good design team look like to you — and a bad one?',
       'What do you want to know about us?',
     ],
-  },
-  {
+  },  {
     kind: 'vd_portfolio',
     no: 2,
-    label: 'Portfolio',
-    purpose: 'The work itself, and whether they can say why it looks the way it does.',
+    label: 'Portfolio discussion',
+    purpose: 'The work itself, and whether they can say why it looks the way it does. A conversation, not a presentation — the interesting part is the reasoning behind a decision, and that only comes out when somebody is asked about it.',
     durationMin: 60,
-    owners: ['Sanket', 'Jithin'],
-    either: true,
+    owners: ['Tamanna'],
     track: 'visual',
     signals: ['craft', 'communication'],
     prompts: [
@@ -250,10 +247,26 @@ const VISUAL: TRung[] = [
       'Which of these would you redo now?',
       'What is the best thing you have made that nobody saw?',
     ],
-  },
-  {
-    kind: 'vd_motion',
+  },  {
+    kind: 'vd_working',
     no: 3,
+    label: 'Working session',
+    purpose: 'Making something together, live. How they take direction and how they push back.',
+    durationMin: 90,
+    owners: ['Sanket', 'Jaden'],
+    track: 'visual',
+    signals: ['craft', 'collaboration', 'communication'],
+    prompts: [
+      'Here is the brief and the assets. Start wherever you like.',
+      'Talk me through what you are reaching for before you reach for it.',
+      'Now make it work at 320px, and in Arabic.',
+      'I do not like it. Ask me better questions than "why not".',
+      'Take it somewhere I have not asked for.',
+      'Which version would you ship, and what are you giving up?',
+    ],
+  },  {
+    kind: 'vd_motion',
+    no: 4,
     label: 'Motion ⇄ Visual',
     purpose:
       'How the work is built, not how it looks. Saswata opens the file: is the illustration layered so it can move, or is it one flat thing that has to be redrawn to animate?',
@@ -273,26 +286,7 @@ const VISUAL: TRung[] = [
       'Where does handing off to a motion designer usually go wrong?',
       'What do you want from us to make that handoff smoother?',
     ],
-  },
-  {
-    kind: 'vd_working',
-    no: 4,
-    label: 'Working session',
-    purpose: 'Making something together, live. How they take direction and how they push back.',
-    durationMin: 90,
-    owners: ['Tamanna'],
-    track: 'visual',
-    signals: ['craft', 'collaboration', 'communication'],
-    prompts: [
-      'Here is the brief and the assets. Start wherever you like.',
-      'Talk me through what you are reaching for before you reach for it.',
-      'Now make it work at 320px, and in Arabic.',
-      'I do not like it. Ask me better questions than "why not".',
-      'Take it somewhere I have not asked for.',
-      'Which version would you ship, and what are you giving up?',
-    ],
-  },
-  {
+  },  {
     kind: 'vd_product',
     no: 5,
     label: 'Product round',
@@ -309,8 +303,7 @@ const VISUAL: TRung[] = [
       'How do you make fifty assets without making fifty decisions?',
       'What is the difference between a brand system and a template?',
     ],
-  },
-  {
+  },  {
     kind: 'vd_culture',
     no: 6,
     label: 'Culture fit',
@@ -327,8 +320,7 @@ const VISUAL: TRung[] = [
       'What would make you leave a job you liked?',
       'What do you want to know about us?',
     ],
-  },
-  {
+  },  {
     kind: 'vd_offer',
     no: 7,
     label: 'Offer rollout',
