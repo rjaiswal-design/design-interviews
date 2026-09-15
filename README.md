@@ -107,6 +107,29 @@ Rounds run on rungs no ladder has any more get their own section at the foot, so
 a retired round is never silently invisible on the one screen that claims to
 show the whole process.
 
+### Routes
+
+```
+#/rounds              the board, by round
+#/people              the board, by candidate
+#/pipeline            the process
+#/rounds/c/<id>       the panel, over the rounds board
+#/people/c/<id>       the panel, over the candidates board
+#/room/<roundId>      one round
+#/t/<roundId>         one transcript
+```
+
+The panel carries the board it was opened from, which is not decoration: it is
+an overlay, something has to be drawn behind it, and a route that only said
+"candidate" left that to a default — so opening somebody from the candidates
+list drew the *rounds* board behind the panel, lit the wrong nav tab, and
+dropped you on rounds when you closed it.
+
+`parse` tests longest-match first. `#/people/c/<id>` shares its first segment
+with `#/people`, and testing the board route above it swallowed every panel link
+opened from the candidates list: the hash was right and the panel simply never
+rendered.
+
 **Live:** https://design-interviews.vercel.app ·
 **Repo:** https://github.com/rjaiswal-design/design-interviews (private)
 
@@ -223,9 +246,17 @@ a round was closed by a move rather than by somebody sitting in it.
 thicker, and each segment opens its round — so the summary never costs you
 access to the rest. **Latest** is the newest log line for that person.
 
-Only candidates in the process appear. Somebody nobody has shortlisted has no
-rounds and nothing to be at; they belong on the Candidates tab, which is where
-shortlisting happens.
+Only candidates **still being interviewed** appear — `isLive`, not `inProcess`.
+Nobody has shortlisted a `pending` candidate, so they have no rounds and nothing
+to be at; and somebody rejected, hired, or whose offer fell through is not being
+interviewed either. All of them live on the Candidates tab, where those
+decisions get made. Their rounds stay on their record and stay reachable from
+the panel — they are just not work anybody owes.
+
+`offer_out` counts: their rounds are finished, so the board reads **All rounds
+done · Waiting on a decision**, which is the one row on it asking somebody to
+act. The funnel band's "In rounds" uses the same predicate, so the count and the
+number of rows under it cannot disagree.
 
 Filters: **Track** and **Round**/**Status** match where they are *now*, which is
 what the column shows. **Panel** matches anywhere on their ladder — scoped to

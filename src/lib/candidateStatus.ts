@@ -35,6 +35,25 @@ export const CANDIDATE_STATUS_LABELS: Record<TCandidateStatus, string> = {
  */
 export const inProcess = (status: TCandidateStatus): boolean => status !== 'pending';
 
+/**
+ * Whether they are still being interviewed — which is a narrower question than
+ * `inProcess`, and the one the rounds board asks.
+ *
+ * `inProcess` decides whether somebody *has* rounds, and it has to stay wide:
+ * a candidate rejected in round three was in the process, and their rounds are
+ * the record of why. But the rounds board answers "who are we interviewing and
+ * where have they got to", and a rejected candidate is not being interviewed.
+ * Nor is somebody hired, or somebody whose offer fell through. Their rounds are
+ * still on their record and still reachable from the panel; they just are not
+ * work anybody owes.
+ *
+ * `offer_out` counts. Their rounds are finished, so the board reads "All rounds
+ * done, waiting on a decision" — which is the one row on it that is asking
+ * somebody to act.
+ */
+export const isLive = (status: TCandidateStatus): boolean =>
+  status === 'shortlisted' || status === 'offer_out';
+
 /** What a move to this state reads as in the activity log. */
 export const CANDIDATE_STATUS_SENTENCE: Record<TCandidateStatus, string> = {
   pending: 'Put back on the shortlist pile',

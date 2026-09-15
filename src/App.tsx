@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { initials } from './lib/format';
+import { isLive } from './lib/candidateStatus';
 import { known, me } from './lib/me';
 import { backend } from './lib/supabase';
 import { go, useRoute } from './lib/route';
@@ -47,10 +48,12 @@ const App = () => {
    *  time somebody marks a round complete. */
   const facts = useMemo(() => {
     const toShortlist = candidates.filter((c) => c.status === 'pending').length;
-    const inRounds = candidates.filter((c) => c.status === 'shortlisted');
+    // `isLive`, the same test the rounds board filters on, so the count and the
+    // number of rows under it cannot disagree.
+    const inRounds = candidates.filter((c) => isLive(c.status));
     const inRoundsIds = new Set(inRounds.map((c) => c.id));
     const done = rounds.filter((r) => r.status === 'complete').length;
-    // Owed only counts rounds belonging to someone still being interviewed.
+    // Owed only counts rounds belonging to somebody still being interviewed.
     // A scheduled round on a rejected candidate is not work anyone owes.
     const owed = rounds.filter(
       (r) => r.status === 'scheduled' && inRoundsIds.has(r.candidateId),
@@ -65,10 +68,24 @@ const App = () => {
     ];
   }, [candidates, rounds]);
 
+  /**
+   * Which nav tab is lit, and which board is drawn.
+   *
+   * The panel is an overlay, so while it is open the tab is the board it was
+   * opened *from* — carried on the route, because a default here meant opening
+   * somebody from the candidates list drew the rounds board behind the panel
+   * and lit the wrong tab.
+   */
   const tab: 'rounds' | 'people' | 'pipeline' =
-    route.view === 'people' ? 'people' : route.view === 'pipeline' ? 'pipeline' : 'rounds';
-  /** The board's two modes. The panel closes back to whichever board you were
-   *  on, and there is no panel over the pipeline. */
+    route.view === 'people'
+      ? 'people'
+      : route.view === 'pipeline'
+        ? 'pipeline'
+        : route.view === 'candidate'
+          ? route.from
+          : 'rounds';
+
+  /** The board's two modes. There is no panel over the pipeline. */
   const mode = tab === 'people' ? 'people' : 'rounds';
 
   const roundById = (id: string) => rounds.find((r) => r.id === id);
@@ -135,7 +152,7 @@ const App = () => {
           round={round}
           candidate={candidate}
           trail={events.filter((e) => e.candidateId === candidate.id)}
-          onClose={() => go({ view: 'candidate', id: candidate.id })}
+          onClose={() => go({ view: 'candidate', id: candidate.id, from: mode })}
         />
       );
     }
@@ -149,7 +166,7 @@ const App = () => {
         <TranscriptReader
           round={round}
           candidate={candidate}
-          onClose={() => go({ view: 'candidate', id: candidate.id })}
+          onClose={() => go({ view: 'candidate', id: candidate.id, from: mode })}
         />
       );
     }
@@ -226,7 +243,9 @@ const App = () => {
           <button
             type="button"
             className="bar-btn"
-            onClick={() => void addCandidate().then((id) => go({ view: 'candidate', id }))}
+            onClick={() =>
+              void addCandidate().then((id) => go({ view: 'candidate', id, from: mode }))
+            }
           >
             <Plus />
             Add candidate

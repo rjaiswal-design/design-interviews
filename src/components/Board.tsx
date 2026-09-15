@@ -8,7 +8,7 @@ import { DECISION_LABELS, LADDER, STATUS_LABELS, ladderFor, rung,
 } from '../lib/ladder';
 import { go } from '../lib/route';
 import { httpUrl } from '../lib/url';
-import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, inProcess } from '../lib/candidateStatus';
+import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, isLive } from '../lib/candidateStatus';
 import { useStore } from '../lib/store';
 import type { TCandidate, TCandidateStatus, TEvent, TRound, TRoundStatus } from '../types';
 import FilterChip from './FilterChip';
@@ -187,15 +187,17 @@ const Board = ({ mode }: TProps) => {
    * and the question this board answers is "where is everyone", not "list every
    * conversation we have ever planned".
    *
-   * Only candidates in the process. Somebody nobody has shortlisted has no
-   * rounds and nothing to be at; they belong on the Candidates tab, which is
-   * where shortlisting happens.
+   * Only candidates still being interviewed — `isLive`, not `inProcess`.
+   * Somebody nobody has shortlisted has no rounds and nothing to be at; and
+   * somebody rejected, hired, or whose offer fell through is not being
+   * interviewed either. All of them belong on the Candidates tab, which is
+   * where those decisions get made. Their rounds stay on their record.
    */
   const visibleRows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return candidates
       .filter((c) => {
-        if (!inProcess(c.status)) return false;
+        if (!isLive(c.status)) return false;
         if (fTrack && c.track !== fTrack) return false;
 
         const ladder = ladders.get(c.id) ?? [];
@@ -238,7 +240,7 @@ const Board = ({ mode }: TProps) => {
    *  a useful outcome of pressing "Add a candidate". */
   const addAndOpen = async () => {
     const id = await addCandidate();
-    go({ view: 'candidate', id });
+    go({ view: 'candidate', id, from: mode });
   };
 
   const exportCandidatesCsv = () => {
@@ -466,7 +468,7 @@ const Board = ({ mode }: TProps) => {
                         <button
                           type="button"
                           className="who"
-                          onClick={() => go({ view: 'candidate', id: c.id })}
+                          onClick={() => go({ view: 'candidate', id: c.id, from: mode })}
                         >
                           <span className="av u-circle">{initials(c.name) || '—'}</span>
                           <span className="lines">
@@ -552,7 +554,7 @@ const Board = ({ mode }: TProps) => {
                             and when" is the whole of that. */}
                         <LatestCell
                           event={latestByCandidate.get(c.id)}
-                          onOpen={() => go({ view: 'candidate', id: c.id })}
+                          onOpen={() => go({ view: 'candidate', id: c.id, from: mode })}
                         />
                       </td>
                     </tr>
@@ -616,7 +618,7 @@ const Board = ({ mode }: TProps) => {
                       <button
                         type="button"
                         className="who"
-                        onClick={() => go({ view: 'candidate', id: c.id })}
+                        onClick={() => go({ view: 'candidate', id: c.id, from: mode })}
                       >
                         <span className="av u-circle">{initials(c.name) || '—'}</span>
                         <span className="lines">
