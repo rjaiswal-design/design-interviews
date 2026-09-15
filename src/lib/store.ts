@@ -57,6 +57,17 @@ type TState = {
    * broken" and "the tool is empty" look identical otherwise.
    */
   error: string;
+  /**
+   * When the last write landed.
+   *
+   * Every `patch*` sets it. The panel reads it to say "Saved", which it has to
+   * get from the store rather than from its own handlers: a panel field saves
+   * on blur, and there are a dozen of them plus the round cards, so a component
+   * tracking its own writes would be a dozen places to forget.
+   *
+   * 0 means nothing has been written this session.
+   */
+  lastWriteAt: number;
   candidates: TCandidate[];
   rounds: TRound[];
   /** The whole log, newest first. Small — a few dozen lines per candidate —
@@ -153,6 +164,7 @@ const toEvents = (candidateId: string, roundId: string, whats: string[]): TEvent
 export const useStore = create<TState>((set, get) => ({
   ready: false,
   error: '',
+  lastWriteAt: 0,
   candidates: [],
   rounds: [],
   events: [],
@@ -294,6 +306,7 @@ export const useStore = create<TState>((set, get) => ({
     set((s) => ({
       candidates: s.candidates.map((c) => (c.id === id ? next : c)),
       events: rows.length > 0 ? [...rows, ...s.events] : s.events,
+      lastWriteAt: Date.now(),
     }));
 
     // Shortlisting is what moves someone into rounds. Entering the process
@@ -337,6 +350,7 @@ export const useStore = create<TState>((set, get) => ({
     set((s) => ({
       rounds: s.rounds.map((r) => (r.id === id ? next : r)),
       events: rows.length > 0 ? [...rows, ...s.events] : s.events,
+      lastWriteAt: Date.now(),
     }));
   },
 

@@ -252,10 +252,10 @@ const Board = ({ mode }: TProps) => {
         'location',
         'email',
         'phone',
+        'portfolio',
         'linkedin',
         'company',
         'their title',
-        'portfolio',
         'source',
       ],
       ...visiblePeople.map((c) => [
@@ -267,10 +267,10 @@ const Board = ({ mode }: TProps) => {
         c.location,
         c.email,
         c.phone,
+        c.portfolio,
         c.linkedin,
         c.previousCompany,
         c.previousPosition,
-        c.portfolio,
         c.source,
       ]),
     ];
@@ -598,7 +598,7 @@ const Board = ({ mode }: TProps) => {
                 <th style={{ width: 120 }}>Location</th>
                 <th style={{ width: 190 }}>Email</th>
                 <th style={{ width: 150 }}>Phone</th>
-                <th style={{ width: 96 }}>LinkedIn</th>
+                <th style={{ width: 104 }}>Portfolio</th>
                 <th style={{ width: 150 }}>Company</th>
                 <th style={{ width: 180 }}>Their title</th>
               </tr>
@@ -666,19 +666,23 @@ const Board = ({ mode }: TProps) => {
                         <span className="none">—</span>
                       )}
                     </td>
-                    {/* The link, not the URL. A LinkedIn address is sixty
-                        characters of slug and tracking parameters, and pasting
-                        one into a table column makes every other column
-                        unreadable. */}
+                    {/* The portfolio, not the LinkedIn. Both are on the
+                        record and both are in the export; this is the column,
+                        because for a design hire the portfolio is the link
+                        somebody actually opens.
+
+                        The link, not the URL: a portfolio address is a slug and
+                        often a string of tracking parameters, and pasting one
+                        into a column makes every other column unreadable. */}
                     <td className="panel-cell">
-                      {httpUrl(c.linkedin) ? (
+                      {httpUrl(c.portfolio) ? (
                         <a
                           className="quiet-link"
-                          href={httpUrl(c.linkedin) ?? undefined}
+                          href={httpUrl(c.portfolio) ?? undefined}
                           target="_blank"
                           rel="noreferrer noopener"
                         >
-                          Profile ↗
+                          Portfolio ↗
                         </a>
                       ) : (
                         <span className="none">—</span>

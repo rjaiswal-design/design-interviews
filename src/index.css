@@ -1508,6 +1508,38 @@ table.log {
   color: var(--prism-ink);
 }
 
+/* The panel's foot. A flex sibling of the scrolling body rather than
+   `position: sticky` inside it: the body is the scroll container, and a sticky
+   child of a scroll container still scrolls with the content it is pinned to.
+   Outside it, the bar is simply always there. */
+.side-sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 12px 24px;
+  border-block-start: 1px solid var(--prism-line);
+  background: var(--prism-bg);
+}
+
+/* The confirmation. Reads as a statement of how the panel behaves until a write
+   lands, then as an acknowledgement of that write for a couple of seconds —
+   which is the honest version of both: nothing here needs pressing, and
+   something just happened. */
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--prism-fs-meta);
+  color: var(--prism-text-tertiary);
+  transition: color var(--dur) var(--ease-out);
+}
+
+.save-state.on {
+  color: var(--color-open);
+  font-weight: 500;
+}
+
 .side-sheet-body {
   flex: 1;
   min-block-size: 0;

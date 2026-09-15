@@ -236,6 +236,24 @@ Export is still one row per *round*. The board summarises; an export is the data
 behind it, and a spreadsheet with five rounds collapsed into "currently at
 portfolio" cannot answer anything you would open a spreadsheet for.
 
+## The panel's foot
+
+Every field in the candidate panel saves on blur — nothing is ever on screen but
+not on disk. What was missing was not a save but the confirmation that one
+happened, and a way out that is always in the same place, so the panel has a
+footer outside the scrolling body: a save state on the left and **Done** on the
+right.
+
+It says **Saved**, not **Update**. A button that looked like it performed the
+save would be a lie, and the dangerous kind — people would trust it and lose
+edits by closing without pressing it.
+
+`lastWriteAt` in the store is what drives it, because a dozen fields and every
+round card can write and a component tracking its own handlers is a dozen places
+to forget. The hook seeds itself with the value at mount: `lastWriteAt` is
+store-wide and survives the panel closing, so an effect keyed on it alone says
+"Saved" the moment the panel opens, about an edit somebody made ten minutes ago.
+
 ## The activity log
 
 The board's right-hand column is one line of log per round, not a row of state

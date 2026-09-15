@@ -25,7 +25,7 @@ import type {
   TRoundStatus,
   TSegment,
 } from '../types';
-import { Close, Play, Trash, Video } from './Icons';
+import { Close, Play, Tick, Trash, Video } from './Icons';
 import ActivityLog from './ActivityLog';
 import LadderTrack from './LadderTrack';
 import Pill from './Pill';
@@ -50,6 +50,36 @@ type TProps = {
   onReadTranscript: (roundId: string) => void;
 };
 
+/**
+ * Whether a write has landed in the last few seconds.
+ *
+ * Drives the "Saved" line in the footer. A timer rather than a transition on a
+ * boolean because the message has to go away on its own — a footer that says
+ * "Saved" for ever is a footer that says nothing, and somebody who comes back
+ * to the panel ten minutes later should not be told their last edit just
+ * landed.
+ */
+const useJustSaved = (at: number): boolean => {
+  const [fresh, setFresh] = useState(false);
+  // Seeded with the value at mount, so the first run is a no-op.
+  //
+  // `lastWriteAt` is store-wide and survives the panel being closed, so an
+  // effect keyed on it alone fires the moment the panel opens and says "Saved"
+  // about an edit somebody made ten minutes ago. Only a *change* after mount is
+  // this panel's own write.
+  const seen = useRef(at);
+
+  useEffect(() => {
+    if (at === seen.current) return;
+    seen.current = at;
+    setFresh(true);
+    const t = window.setTimeout(() => setFresh(false), 2600);
+    return () => window.clearTimeout(t);
+  }, [at]);
+
+  return fresh;
+};
+
 const CandidatePanel = ({
   candidate,
   rounds,
@@ -61,6 +91,8 @@ const CandidatePanel = ({
   const patchRound = useStore((s) => s.patchRound);
   const removeCandidate = useStore((s) => s.removeCandidate);
   const events = useStore((s) => s.events);
+  const lastWriteAt = useStore((s) => s.lastWriteAt);
+  const justSaved = useJustSaved(lastWriteAt);
   const [moments, setMoments] = useState<TSegment[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -580,6 +612,32 @@ const CandidatePanel = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Outside the scrolling body, so it is there however far down the
+            record you are.
+            
+            It says "Saved", not "Update". Every field in here saves on blur —
+            nothing is ever on screen but not on disk — so a button that looked
+            like it performed the save would be a lie, and the dangerous kind:
+            people would trust it and lose edits by closing without pressing
+            it. What was missing was not a save, it was the confirmation that
+            one happened and a way out that is always in the same place. */}
+        <div className="side-sheet-foot">
+          <span className={`save-state${justSaved ? ' on' : ''}`}>
+            {justSaved ? (
+              <>
+                <Tick size={12} />
+                Saved
+              </>
+            ) : (
+              'Changes save as you make them'
+            )}
+          </span>
+          <div className="spacer" />
+          <button type="button" className="btn" onClick={onClose}>
+            Done
+          </button>
         </div>
       </div>
     </div>
