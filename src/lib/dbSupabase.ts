@@ -43,9 +43,9 @@ type TCandidateRow = {
   track: TCandidate['track'];
   status: TCandidate['status'];
   role: string;
-  level: string;
   location: string;
   portfolio: string;
+  linkedin: string;
   email: string;
   phone: string;
   previous_company: string;
@@ -63,9 +63,9 @@ const toCandidate = (r: TCandidateRow): TCandidate => ({
   track: r.track,
   status: r.status,
   role: r.role,
-  level: r.level,
   location: r.location,
   portfolio: r.portfolio,
+  linkedin: r.linkedin ?? '',
   email: r.email,
   phone: r.phone,
   previousCompany: r.previous_company,
@@ -83,9 +83,9 @@ const fromCandidate = (c: TCandidate) => ({
   track: c.track,
   status: c.status,
   role: c.role,
-  level: c.level,
   location: c.location,
   portfolio: c.portfolio,
+  linkedin: c.linkedin,
   email: c.email,
   phone: c.phone,
   previous_company: c.previousCompany,

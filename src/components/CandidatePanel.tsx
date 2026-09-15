@@ -219,16 +219,6 @@ const CandidatePanel = ({
                 />
               </dd>
 
-              <dt>Level</dt>
-              <dd>
-                <input
-                  className="field"
-                  defaultValue={candidate.level}
-                  placeholder="IC3"
-                  onBlur={(e) => void patchCandidate(candidate.id, { level: e.target.value })}
-                />
-              </dd>
-
               <dt>Location</dt>
               <dd>
                 <input
@@ -246,6 +236,18 @@ const CandidatePanel = ({
                   defaultValue={candidate.portfolio}
                   placeholder="https://"
                   onBlur={(e) => void patchCandidate(candidate.id, { portfolio: e.target.value })}
+                />
+              </dd>
+
+              <dt>LinkedIn</dt>
+              <dd>
+                {/* Its own field, not a second use of Portfolio. What they have
+                    made and where they have worked are different questions. */}
+                <input
+                  className="field"
+                  defaultValue={candidate.linkedin}
+                  placeholder="https://linkedin.com/in/…"
+                  onBlur={(e) => void patchCandidate(candidate.id, { linkedin: e.target.value })}
                 />
               </dd>
 

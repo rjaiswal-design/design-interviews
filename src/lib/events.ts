@@ -117,10 +117,6 @@ export const candidateEvents = (
     out.push(CANDIDATE_STATUS_SENTENCE[patch.status]);
   }
 
-  if (patch.level !== undefined && patch.level.trim() !== before.level.trim()) {
-    out.push(`Level ${before.level || 'unset'} → ${patch.level || 'unset'}`);
-  }
-
   if (patch.role !== undefined && patch.role.trim() !== before.role.trim() && before.role.trim()) {
     out.push(`Role changed to ${patch.role || 'unset'}`);
   }

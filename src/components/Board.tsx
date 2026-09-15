@@ -7,6 +7,7 @@ import { DECISION_LABELS, LADDER, STATUS_LABELS, ladderFor, rung,
   byLadder,
 } from '../lib/ladder';
 import { go } from '../lib/route';
+import { httpUrl } from '../lib/url';
 import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, inProcess } from '../lib/candidateStatus';
 import { useStore } from '../lib/store';
 import type { TCandidate, TCandidateStatus, TEvent, TRound, TRoundStatus } from '../types';
@@ -214,7 +215,6 @@ const Board = ({ mode }: TProps) => {
         return (
           c.name.toLowerCase().includes(needle) ||
           c.role.toLowerCase().includes(needle) ||
-          c.level.toLowerCase().includes(needle) ||
           ladder.some((r) => r.interviewers.join(' ').toLowerCase().includes(needle))
         );
       })
@@ -228,7 +228,6 @@ const Board = ({ mode }: TProps) => {
       return (
         c.name.toLowerCase().includes(needle) ||
         c.role.toLowerCase().includes(needle) ||
-        c.level.toLowerCase().includes(needle) ||
         c.location.toLowerCase().includes(needle) ||
         c.source.toLowerCase().includes(needle)
       );
@@ -249,11 +248,11 @@ const Board = ({ mode }: TProps) => {
         'candidate',
         'track',
         'applying for',
-        'level',
         'status',
         'location',
         'email',
         'phone',
+        'linkedin',
         'company',
         'their title',
         'portfolio',
@@ -264,11 +263,11 @@ const Board = ({ mode }: TProps) => {
         c.name,
         TRACK_LABELS[c.track],
         c.role,
-        c.level,
         CANDIDATE_STATUS_LABELS[c.status],
         c.location,
         c.email,
         c.phone,
+        c.linkedin,
         c.previousCompany,
         c.previousPosition,
         c.portfolio,
@@ -285,7 +284,6 @@ const Board = ({ mode }: TProps) => {
         'candidate',
         'track',
         'applying for',
-        'level',
         'round',
         'panel',
         'when',
@@ -302,7 +300,6 @@ const Board = ({ mode }: TProps) => {
           c.name,
           TRACK_LABELS[c.track],
           c.role,
-          c.level,
           rung(r.kind).label,
           r.interviewers.join('; '),
           r.scheduledAt ? new Date(r.scheduledAt).toISOString() : '',
@@ -472,7 +469,11 @@ const Board = ({ mode }: TProps) => {
                           <span className="av u-circle">{initials(c.name) || '—'}</span>
                           <span className="lines">
                             <span className="nm">{c.name || 'Unnamed'}</span>
-                            <span className="rl">{c.level}</span>
+                            {/* The track, which is what explains why this
+                                person's rounds are named what they are — and
+                                the one thing about them this board does not
+                                carry in a column of its own. */}
+                            <span className="rl">{TRACK_LABELS[c.track]}</span>
                           </span>
                         </button>
                       </td>
@@ -575,7 +576,7 @@ const Board = ({ mode }: TProps) => {
             )}
           </div>
         ) : (
-          <table className="log" style={{ minWidth: 1440 }}>
+          <table className="log" style={{ minWidth: 1500 }}>
             <thead>
               {/*
                 * This view is about the person, not their progress.
@@ -597,6 +598,7 @@ const Board = ({ mode }: TProps) => {
                 <th style={{ width: 120 }}>Location</th>
                 <th style={{ width: 190 }}>Email</th>
                 <th style={{ width: 150 }}>Phone</th>
+                <th style={{ width: 96 }}>LinkedIn</th>
                 <th style={{ width: 150 }}>Company</th>
                 <th style={{ width: 180 }}>Their title</th>
               </tr>
@@ -619,10 +621,7 @@ const Board = ({ mode }: TProps) => {
                               facts that are about the person rather than the
                               req — and how someone reached us is the one that
                               decides who chases them. */}
-                          <span className="rl">
-                            {c.level}
-                            {c.source ? ` · ${c.source}` : ''}
-                          </span>
+                          <span className="rl">{c.source}</span>
                         </span>
                       </button>
                     </td>
@@ -662,6 +661,24 @@ const Board = ({ mode }: TProps) => {
                       {c.phone ? (
                         <a className="quiet-link" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
                           {c.phone}
+                        </a>
+                      ) : (
+                        <span className="none">—</span>
+                      )}
+                    </td>
+                    {/* The link, not the URL. A LinkedIn address is sixty
+                        characters of slug and tracking parameters, and pasting
+                        one into a table column makes every other column
+                        unreadable. */}
+                    <td className="panel-cell">
+                      {httpUrl(c.linkedin) ? (
+                        <a
+                          className="quiet-link"
+                          href={httpUrl(c.linkedin) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
+                          Profile ↗
                         </a>
                       ) : (
                         <span className="none">—</span>

@@ -118,9 +118,17 @@ export type TCandidate = {
    * to be told about before anyone can be added to one.
    */
   role: string;
-  level: string;
   location: string;
+  /** Their own site or case studies. */
   portfolio: string;
+  /**
+   * Their LinkedIn profile.
+   *
+   * Separate from `portfolio` because they answer different questions — what
+   * they have made, versus where they have worked and who knows them. One
+   * field was doing both, badly, because there was nowhere else to put it.
+   */
+  linkedin: string;
   email: string;
   phone: string;
   /** Where they are now — or most recently, for someone between jobs. */

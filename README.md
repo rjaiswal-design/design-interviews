@@ -356,7 +356,6 @@ understood:
 |-------|------------------|
 | name | candidate, candidate name, full name |
 | role | req, requisition, opening, vacancy, applied for, position |
-| level | band, seniority, grade |
 | location | city, market, base |
 | email | mail, email address |
 | portfolio | website, site, url, link |
@@ -365,6 +364,7 @@ understood:
 | ref | id, candidate id, application id |
 | track | discipline, ladder, pipeline, team, craft |
 | phone | mobile, tel, telephone, contact number |
+| linkedin | linkedin url, linkedin profile, profile |
 | company | current employer, employer, organisation, org |
 | their title | job title, title, current role, designation |
 | scheduled_at | date, first round, interview date, when |

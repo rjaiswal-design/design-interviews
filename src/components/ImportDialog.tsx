@@ -121,7 +121,7 @@ const ImportDialog = ({ onClose }: TProps) => {
                     .slice(0, 8)
                     .map(
                       (c) =>
-                        `#${c.ref}  ${c.name}  ·  ${c.level}  ·  ${c.role || 'no role'}  ·  ${
+                        `#${c.ref}  ${c.name}  ·  ${c.role || 'no role'}  ·  ${
                           parsed.rounds.filter((r) => r.candidateId === c.id).length
                         } rounds`,
                     )

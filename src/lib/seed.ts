@@ -19,7 +19,6 @@ type TSketch = {
   name: string;
   track: TTrack;
   role: string;
-  level: string;
   location: string;
   source: string;
   phone: string;
@@ -42,7 +41,6 @@ const SKETCHES: TSketch[] = [
     name: 'Noor Al-Hashimi',
     track: 'product',
     role: 'Product Designer, noonFood',
-    level: 'Senior',
     location: 'Dubai',
     source: 'Referral — Ayaneshu',
     phone: '+971 50 412 8837',
@@ -60,7 +58,6 @@ const SKETCHES: TSketch[] = [
     name: 'Tanvi Rao',
     track: 'product',
     role: 'Design Systems, Platform',
-    level: 'IC4',
     location: 'Bengaluru',
     source: 'Inbound',
     phone: '+91 98455 22106',
@@ -78,7 +75,6 @@ const SKETCHES: TSketch[] = [
     name: 'Omar Fahmy',
     track: 'product',
     role: 'Product Designer, Marketplace',
-    level: 'IC3',
     location: 'Cairo',
     source: 'Sourced — LinkedIn',
     phone: '+20 100 774 5512',
@@ -96,7 +92,6 @@ const SKETCHES: TSketch[] = [
     name: 'Lina Haddad',
     track: 'visual',
     role: 'Motion & Brand',
-    level: 'Senior',
     location: 'Riyadh',
     source: 'Agency — Aquent',
     phone: '+966 55 903 1274',
@@ -114,7 +109,6 @@ const SKETCHES: TSketch[] = [
     name: 'Karan Desai',
     track: 'product',
     role: 'Product Designer, Minutes',
-    level: 'IC3',
     location: 'Dubai',
     source: 'Inbound',
     phone: '+971 52 661 0490',
@@ -132,7 +126,6 @@ const SKETCHES: TSketch[] = [
     name: 'Aisha Rahman',
     track: 'product',
     role: 'Product Designer, Growth',
-    level: 'IC4',
     location: 'Dubai',
     source: 'Referral — Soumya',
     phone: '+971 56 338 7741',
@@ -147,7 +140,6 @@ const SKETCHES: TSketch[] = [
     name: 'Dana Khalil',
     track: 'visual',
     role: 'Product Designer, Growth',
-    level: 'IC3',
     location: 'Amman',
     source: 'Inbound',
     phone: '+962 79 551 2208',
@@ -160,7 +152,6 @@ const SKETCHES: TSketch[] = [
     name: 'Ravi Shankar',
     track: 'product',
     role: 'Design Systems, Platform',
-    level: 'IC4',
     location: 'Bengaluru',
     source: 'Sourced — LinkedIn',
     phone: '+91 99012 44871',
@@ -223,9 +214,9 @@ export const buildSeed = (): {
       ref: 101 + i,
       name: sk.name,
       role: sk.role,
-      level: sk.level,
       location: sk.location,
       portfolio: `https://${sk.name.split(' ')[0].toLowerCase()}.design`,
+      linkedin: `https://www.linkedin.com/in/${slug(sk.name)}`,
       email: `${sk.name.split(' ')[0].toLowerCase()}@example.com`,
       phone: sk.phone,
       previousCompany: sk.company,

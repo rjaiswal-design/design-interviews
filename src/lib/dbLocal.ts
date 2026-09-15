@@ -98,6 +98,7 @@ const hydrateCandidate = (c: TCandidate): TCandidate => ({
   track: c.track ?? 'product',
   status: LEGACY_STATUS[c.status as string] ?? c.status,
   phone: c.phone ?? '',
+  linkedin: c.linkedin ?? '',
   previousCompany: c.previousCompany ?? '',
   previousPosition: c.previousPosition ?? '',
   email: c.email ?? '',

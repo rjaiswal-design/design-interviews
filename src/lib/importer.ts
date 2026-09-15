@@ -34,7 +34,6 @@ const FIELDS: Record<string, string[]> = {
     'vacancy',
     'position',
   ],
-  level: ['level', 'band', 'seniority', 'grade'],
   location: ['location', 'city', 'market', 'base'],
   email: ['email', 'mail', 'emailaddress'],
   phone: ['phone', 'mobile', 'tel', 'telephone', 'phonenumber', 'contactnumber', 'number'],
@@ -64,6 +63,7 @@ const FIELDS: Record<string, string[]> = {
     'designation',
   ],
   portfolio: ['portfolio', 'website', 'site', 'url', 'link'],
+  linkedin: ['linkedin', 'linkedinurl', 'linkedinprofile', 'li', 'profile'],
   source: ['source', 'channel', 'via', 'referrer', 'referral'],
   status: ['status', 'stage', 'state'],
   ref: ['ref', 'id', 'candidateid', 'applicationid', 'no'],
@@ -145,7 +145,6 @@ export const importRows = (text: string, startRef: number): TImportResult => {
       return;
     }
 
-    const level = at('level') || 'IC3';
     const id = newId('cand');
     const refRaw = Number.parseInt(at('ref'), 10);
     const status = readStatus(at('status'));
@@ -163,9 +162,9 @@ export const importRows = (text: string, startRef: number): TImportResult => {
       ref: Number.isFinite(refRaw) && refRaw > 0 ? refRaw : ref++,
       name,
       role: at('role'),
-      level,
       location: at('location'),
       portfolio: at('portfolio'),
+      linkedin: at('linkedin'),
       email: at('email'),
       phone: at('phone'),
       previousCompany: at('previousCompany'),
@@ -229,6 +228,6 @@ export const importRows = (text: string, startRef: number): TImportResult => {
 };
 
 /** The header the importer is happiest with, for the dialog to show. */
-export const SAMPLE_CSV = `name,applying for,level,email,phone,company,their title,source,status,scheduled_at,interviewer
+export const SAMPLE_CSV = `name,applying for,email,phone,linkedin,company,their title,source,status,scheduled_at,interviewer
 Noor Al-Hashimi,"Product Designer, noonFood",Senior,noor@example.com,+971 50 412 8837,Careem,Staff Product Designer,Referral,active,2026-09-16 14:30,Rahul Jaiswal
 Tanvi Rao,"Design Systems, Platform",IC4,tanvi@example.com,+91 98455 22106,Razorpay,Design Systems Lead,Inbound,active,2026-09-17 11:00,Soumya Nair`;
