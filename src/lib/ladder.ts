@@ -109,8 +109,27 @@ const PRODUCT: TRung[] = [
     ],
   },
   {
-    kind: 'pd_critique',
+    kind: 'pd_ai_coding',
     no: 3,
+    label: 'AI coding',
+    purpose:
+      'Can they build the thing, with the tools that now exist? Not whether they are an engineer — whether they can get an idea running and judge what comes back.',
+    durationMin: 60,
+    owners: ['Arnab'],
+    track: 'product',
+    signals: ['craft', 'systems', 'product'],
+    prompts: [
+      'Show me something you have built with an AI tool. Anything that ran.',
+      'Take this brief and get something on screen. Talk while you do it.',
+      'It gave you the wrong thing. How do you tell, and what do you say next?',
+      'Where does it stop being faster than doing it yourself?',
+      'What would you not let it decide?',
+      'How would you hand this to an engineer without insulting them?',
+    ],
+  },
+  {
+    kind: 'pd_critique',
+    no: 4,
     label: 'Design critique & whiteboarding',
     purpose:
       'A live problem on our surface, then our work put in front of them. Watching them think, and watching them judge.',
@@ -126,25 +145,6 @@ const PRODUCT: TRung[] = [
       'Here is a screen we shipped. Critique it as if you owned it.',
       'When is it correct to break the design system?',
       'Now critique your own screen as if someone else made it.',
-    ],
-  },
-  {
-    kind: 'pd_ai_coding',
-    no: 4,
-    label: 'AI coding',
-    purpose:
-      'Can they build the thing, with the tools that now exist? Not whether they are an engineer — whether they can get an idea running and judge what comes back.',
-    durationMin: 60,
-    owners: ['Arnab'],
-    track: 'product',
-    signals: ['craft', 'systems', 'product'],
-    prompts: [
-      'Show me something you have built with an AI tool. Anything that ran.',
-      'Take this brief and get something on screen. Talk while you do it.',
-      'It gave you the wrong thing. How do you tell, and what do you say next?',
-      'Where does it stop being faster than doing it yourself?',
-      'What would you not let it decide?',
-      'How would you hand this to an engineer without insulting them?',
     ],
   },
   {

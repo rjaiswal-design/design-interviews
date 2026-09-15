@@ -22,8 +22,8 @@ walks all of it.
 |---|-------|-------------|--------|
 | 1 | HR round | HR executive | Communication, Ambition |
 | 2 | Portfolio | Ayaneshu | Craft, Product thinking, Communication |
-| 3 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
-| 4 | AI coding | Arnab | Craft, Systems, Product thinking |
+| 3 | AI coding | Arnab | Craft, Systems, Product thinking |
+| 4 | Design critique & whiteboarding | Rahul | Craft, Systems, Communication |
 | 5 | Head of design | Ayush | Ambition, Collaboration |
 | 6 | Product thinking | Saumya | Product thinking, Collaboration, Communication |
 | 7 | Offer rollout | Aanchal & Rahul | — |
