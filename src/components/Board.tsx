@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { toCsv, download } from '../lib/csv';
 import { initials, relative } from '../lib/format';
-import { DECISION_LABELS, LADDER, STATUS_LABELS, ladderFor, rung,
+import { DECISION_LABELS, STAGES, STATUS_LABELS, inStage, ladderFor, rung,
   TRACKS,
   TRACK_LABELS,
   byLadder,
@@ -224,7 +224,10 @@ const Board = ({ mode }: TProps) => {
         // Round and Status filter on where they are *now*, which is what the
         // column shows — "who is at the craft round" is the question, not "who
         // has a craft round somewhere on their ladder".
-        if (fRung && where.round?.kind !== fRung) return false;
+        //
+        // Round filters by stage, so picking the HR round finds everybody
+        // waiting on it across both ladders rather than one track's half.
+        if (!inStage(fRung, where.round?.kind)) return false;
         if (fStatus && where.round?.status !== fStatus) return false;
         // Panel matches anywhere on their ladder. Scoped to the current round
         // it would hide a candidate whose portfolio you ran and who has since
@@ -387,12 +390,14 @@ const Board = ({ mode }: TProps) => {
               label="Round"
               value={fRung}
               onChange={setFRung}
-              // Nine rungs across two ladders, so each is prefixed with its
-              // track — there is a "Portfolio" and a "Head of design" on both.
-              options={LADDER.map((r) => ({
-                value: r.kind,
-                label: `${r.track === 'visual' ? 'VD' : 'PD'} ${r.no}. ${r.label}`,
-                n: rounds.filter((x) => x.kind === r.kind).length,
+              // Stages, not rungs. The rounds both tracks run the same way are
+              // one option — "HR round", not "PD 1. HR round" and "VD 1. HR
+              // round" — and the ones that exist on a single ladder say which,
+              // since "AI coding" alone would read as something both tracks do.
+              options={STAGES.map((st) => ({
+                value: st.id,
+                label: st.tracks.length === 1 ? `${st.label} · ${st.tracks[0] === 'visual' ? 'VD' : 'PD'}` : st.label,
+                n: rounds.filter((x) => st.kinds.includes(x.kind)).length,
               }))}
             />
             <FilterChip

@@ -350,6 +350,59 @@ export const LADDERS: Record<TTrack, TRung[]> = { product: PRODUCT, visual: VISU
 /** Every rung on every ladder, in track order. For filters and the pipeline. */
 export const LADDER: TRung[] = [...PRODUCT, ...VISUAL];
 
+/**
+ * The two ladders collapsed to stages, for the Round filter.
+ *
+ * Two ladders means "the HR round" is two kinds — `pd_hr` and `vd_hr` — so a
+ * filter that listed rungs made "who is waiting on HR" a question you had to
+ * ask twice and add up yourself. A stage is one option covering every kind
+ * that shares a label, which is exactly the rungs both tracks run the same
+ * way: the HR round, the head of design, the offer rollout.
+ *
+ * Labels are the key rather than a hand-kept pairing list, so the grouping is
+ * a consequence of what the rungs are called. Two rounds named the same thing
+ * are the same conversation on two ladders; "Portfolio" and "Portfolio
+ * discussion" are named apart because Tamanna's round is not Ayaneshu's, and
+ * they stay two options. Renaming a rung to match its counterpart merges them
+ * with no other edit — and that is the right behaviour, since a rung renamed
+ * to match is being declared the same round.
+ */
+export type TStage = {
+  id: string;
+  label: string;
+  kinds: TStoredRoundKind[];
+  tracks: TTrack[];
+};
+
+export const STAGES: TStage[] = (() => {
+  const by = new Map<string, TStage>();
+  for (const r of LADDER) {
+    const at = by.get(r.label);
+    if (at) {
+      at.kinds.push(r.kind);
+      if (r.track && !at.tracks.includes(r.track)) at.tracks.push(r.track);
+      continue;
+    }
+    by.set(r.label, {
+      id: r.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      label: r.label,
+      kinds: [r.kind],
+      tracks: r.track ? [r.track] : [],
+    });
+  }
+  // Ladder order, by where the stage first appears. `LADDER` is product then
+  // visual, so the shared rungs land at the product position they hold —
+  // the HR round first and the offer rollout last, which is true of both.
+  return [...by.values()];
+})();
+
+/** Does a round sit in this stage? `''` is every stage, which is no filter. */
+export const inStage = (id: string, kind: TStoredRoundKind | undefined): boolean => {
+  if (!id) return true;
+  const stage = STAGES.find((s) => s.id === id);
+  return !!kind && !!stage && stage.kinds.includes(kind);
+};
+
 /** The rungs a candidate on this track walks. All of them. */
 export const ladderFor = (track: TTrack): TRung[] => LADDERS[track] ?? PRODUCT;
 
