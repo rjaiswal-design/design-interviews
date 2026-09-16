@@ -182,14 +182,27 @@ const Board = ({ mode }: TProps) => {
 
   /** Live candidates per track, for the tag counts — the same population the
    *  board draws, so the number on the tag is the number of rows it gives you. */
-  const liveByTrack = useMemo(() => {
-    const m = new Map<TTrack, number>();
+  /**
+   * Candidates per track, counted twice: everybody, and just the ones in
+   * rounds.
+   *
+   * The tag carries the number you are choosing between, so it has to be the
+   * number the view under it lists. The rounds board lists people in process
+   * and the candidates board lists everyone, and with sixty-nine CVs waiting
+   * on a shortlist decision those are not close — a tag reading "4" above a
+   * table of forty would be read as a filter that had already been applied.
+   */
+  const byTrack = useMemo(() => {
+    const all = new Map<TTrack, number>();
+    const live = new Map<TTrack, number>();
     for (const c of candidates) {
-      if (!isLive(c.status)) continue;
-      m.set(c.track, (m.get(c.track) ?? 0) + 1);
+      all.set(c.track, (all.get(c.track) ?? 0) + 1);
+      if (isLive(c.status)) live.set(c.track, (live.get(c.track) ?? 0) + 1);
     }
-    return m;
+    return { all, live };
   }, [candidates]);
+
+  const countByTrack = mode === 'people' ? byTrack.all : byTrack.live;
 
   const liveCandidates = useMemo(
     () => new Set(rounds.filter((r) => r.status === 'in_progress').map((r) => r.candidateId)),
@@ -247,6 +260,7 @@ const Board = ({ mode }: TProps) => {
   const visiblePeople = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return candidates.filter((c) => {
+      if (fTrack && c.track !== fTrack) return false;
       if (!needle) return true;
       return (
         c.name.toLowerCase().includes(needle) ||
@@ -255,7 +269,7 @@ const Board = ({ mode }: TProps) => {
         c.source.toLowerCase().includes(needle)
       );
     });
-  }, [candidates, q]);
+  }, [candidates, q, fTrack]);
 
   /** Add one and open it, because a blank row on a board you cannot see is not
    *  a useful outcome of pressing "Add a candidate". */
@@ -363,29 +377,33 @@ const Board = ({ mode }: TProps) => {
           )}
         </div>
 
+        {/* Two tags rather than a dropdown. A menu for a two-value filter
+            costs a click to open and a click to choose, and hides both options
+            until you do — when the whole point of a track filter is that there
+            are exactly two and you want one of them.
+
+            Clicking the lit one clears it, which is what "Any" was doing inside
+            the menu. The count is on the tag because that is the number you are
+            choosing between. */}
+        {TRACKS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            className="chip"
+            data-active={fTrack === t}
+            onClick={() => setFTrack(fTrack === t ? '' : t)}
+            title={fTrack === t ? `Showing ${TRACK_LABELS[t]} only — click to clear` : `Show ${TRACK_LABELS[t]} only`}
+          >
+            <span className="v">{TRACK_LABELS[t]}</span>
+            <span className="n">{countByTrack.get(t) ?? 0}</span>
+          </button>
+        ))}
+
+        {/* Round, status and panel are questions about a conversation, so they
+            belong to the board that lists conversations. Track is a question
+            about a person and reads the same on both. */}
         {mode === 'rounds' && (
           <>
-            {/* Two tags rather than a dropdown. A menu for a two-value filter
-                costs a click to open and a click to choose, and hides both
-                options until you do — when the whole point of a track filter is
-                that there are exactly two and you want one of them.
-
-                Clicking the lit one clears it, which is what "Any" was doing
-                inside the menu. The count is on the tag because that is the
-                number you are choosing between. */}
-            {TRACKS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className="chip"
-                data-active={fTrack === t}
-                onClick={() => setFTrack(fTrack === t ? '' : t)}
-                title={fTrack === t ? `Showing ${TRACK_LABELS[t]} only — click to clear` : `Show ${TRACK_LABELS[t]} only`}
-              >
-                <span className="v">{TRACK_LABELS[t]}</span>
-                <span className="n">{liveByTrack.get(t) ?? 0}</span>
-              </button>
-            ))}
             <FilterChip
               label="Round"
               value={fRung}

@@ -28,6 +28,13 @@ const FIELDS: Record<string, string[]> = {
     'role',
     'applyingfor',
     'appliedfor',
+    'roleapplyingfor',
+    'roleappliedfor',
+    'positionapplyingfor',
+    'applyingforrole',
+    'applyingforposition',
+    'openrole',
+    'openposition',
     'req',
     'requisition',
     'opening',
@@ -77,6 +84,43 @@ const FIELDS: Record<string, string[]> = {
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
+ * A header, placed on a field.
+ *
+ * Exact spellings first, then the longest alias contained in the header. A
+ * spreadsheet column is rarely named exactly what the schema calls it —
+ * "Role applying for" normalises to `roleapplyingfor`, which matched nothing
+ * and was dropped as unmappable even though the file said "applying for" in
+ * so many words. That is the worst possible failure for an import: the column
+ * you cared about is the one silently missing.
+ *
+ * Longest wins because a header usually contains the short alias of some other
+ * field by accident. `previousrole` holds `role`, and taking the four-letter
+ * hit would import somebody's current job as the opening they applied for;
+ * matching `previousrole` — eleven letters — puts it where it belongs. Same
+ * reasoning as `STATUS_PATTERNS` below, and the route parser.
+ */
+const place = (h: string): string | undefined => {
+  const fields = Object.keys(FIELDS);
+  const exact = fields.find((f) => FIELDS[f].includes(h));
+  if (exact) return exact;
+
+  let best: string | undefined;
+  let len = 0;
+  for (const f of fields) {
+    for (const alias of FIELDS[f]) {
+      // Three letters and under only count exactly. `no`, `li` and `org` inside
+      // a longer header are letters, not a column name.
+      if (alias.length <= 3 || !h.includes(alias)) continue;
+      if (alias.length > len) {
+        best = f;
+        len = alias.length;
+      }
+    }
+  }
+  return best;
+};
+
+/**
  * An ATS stage, read as one of ours.
  *
  * Longest patterns first: "offer declined" has to be tested before "offer", or
@@ -86,6 +130,10 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
  * rounds this state exists to prevent.
  */
 const STATUS_PATTERNS: [RegExp, TCandidateStatus][] = [
+  // Negations first, and for the same reason. "Yet to be shortlisted" contains
+  // "shortlist" and imported as somebody already through the screen, which is
+  // the one mistake that builds a seven-round ladder for a CV nobody has read.
+  [/yettobe|nottobe|tobeshortlisted|notshortlist|awaiting|unreviewed|notreviewed/, 'pending'],
   [/offerdrop|offerdeclin|offerreject|offerlost|declinedoffer/, 'offer_dropped'],
   [/hired|joined|accepted|offeraccept/, 'hired'],
   [/offer|rollout/, 'offer_out'],
@@ -125,7 +173,7 @@ export const importRows = (text: string, startRef: number): TImportResult => {
   /** field -> column index. */
   const map: Record<string, number> = {};
   header.forEach((h, i) => {
-    const field = Object.keys(FIELDS).find((f) => FIELDS[f].includes(h));
+    const field = place(h);
     if (field && map[field] === undefined) map[field] = i;
     else if (!field) result.ignored.push(rows[0][i]);
   });
