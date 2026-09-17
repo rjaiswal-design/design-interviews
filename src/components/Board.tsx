@@ -8,7 +8,7 @@ import { DECISION_LABELS, STAGES, STATUS_LABELS, inStage, ladderFor, rung,
 } from '../lib/ladder';
 import { go } from '../lib/route';
 import { httpUrl } from '../lib/url';
-import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, isLive } from '../lib/candidateStatus';
+import { CANDIDATE_STATUSES, CANDIDATE_STATUS_LABELS, inProcess, isLive } from '../lib/candidateStatus';
 import { useStore } from '../lib/store';
 import type {
   TCandidate,
@@ -136,6 +136,25 @@ const Board = ({ mode }: TProps) => {
   const [fRung, setFRung] = useState('');
   const [fStatus, setFStatus] = useState('');
   const [fPanel, setFPanel] = useState('');
+
+  /**
+   * Picked rows, by id, and the row a range extends from.
+   *
+   * Ids rather than indices: the table re-sorts and re-filters under you, and a
+   * selection of positions would silently come to mean different people. The
+   * anchor is an id for the same reason.
+   *
+   * Only the candidates board has this. Triage is a decision about people —
+   * sixty-seven of them, arriving in one import — and the rounds board is one
+   * row per person already in the process, where the work is per conversation
+   * and does not batch.
+   */
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [anchor, setAnchor] = useState('');
+  /** A bulk write in flight. Disables the bar rather than queueing clicks. */
+  const [bulk, setBulk] = useState('');
+  /** Shortlisting builds ladders, so it asks once. Holds the pending action. */
+  const [confirm, setConfirm] = useState<TCandidateStatus | ''>('');
 
   /** Selected as a list and narrowed here, never filtered inside the selector:
    *  `useStore((s) => s.rounds.filter(…))` builds a new array on every read, the
@@ -270,6 +289,93 @@ const Board = ({ mode }: TProps) => {
       );
     });
   }, [candidates, q, fTrack]);
+
+  /** Selection is scoped to what is on screen. A filter narrowing the table
+   *  under a live selection would otherwise leave rows picked that nobody can
+   *  see, and "Reject 40" would mean something different from the forty rows
+   *  being looked at. */
+  const pickedHere = useMemo(
+    () => visiblePeople.filter((c) => picked.has(c.id)),
+    [visiblePeople, picked],
+  );
+
+  /** Click picks one; shift-click takes everything between it and the last
+   *  click, which is how a sheet is expected to behave and the only way to
+   *  take forty rows without forty clicks. */
+  const pick = (id: string, shift: boolean) => {
+    setConfirm('');
+    setPicked((was) => {
+      const next = new Set(was);
+      const ids = visiblePeople.map((c) => c.id);
+      const from = ids.indexOf(anchor);
+      const to = ids.indexOf(id);
+      if (shift && from !== -1 && to !== -1) {
+        const [a, b] = from < to ? [from, to] : [to, from];
+        // The anchor's own state is what the range takes, so shift-clicking
+        // after unpicking clears a range instead of filling it.
+        const on = was.has(anchor);
+        for (const between of ids.slice(a, b + 1)) {
+          if (on) next.add(between);
+          else next.delete(between);
+        }
+        return next;
+      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    if (!shift) setAnchor(id);
+  };
+
+  const pickAll = (on: boolean) => {
+    setConfirm('');
+    setPicked((was) => {
+      const next = new Set(was);
+      for (const c of visiblePeople) {
+        if (on) next.add(c.id);
+        else next.delete(c.id);
+      }
+      return next;
+    });
+  };
+
+  const clearPicked = () => {
+    setPicked(new Set());
+    setAnchor('');
+    setConfirm('');
+  };
+
+  /**
+   * How many rounds a bulk shortlist would book.
+   *
+   * Shortlisting is the one status that creates work: it builds the whole
+   * ladder. Seven rungs times sixty-seven CVs is four hundred and sixty-nine
+   * rounds, which is why this number is on the button before the click rather
+   * than discovered afterwards on the rounds board.
+   */
+  const roundsFromShortlist = useMemo(
+    () =>
+      pickedHere
+        .filter((c) => !inProcess(c.status))
+        .reduce((n, c) => n + ladderFor(c.track).length, 0),
+    [pickedHere],
+  );
+
+  const applyStatus = async (status: TCandidateStatus) => {
+    const rows = pickedHere.filter((c) => c.status !== status);
+    if (!rows.length) return;
+    setConfirm('');
+    setBulk(status);
+    try {
+      // One at a time, through the store, so each lands in the activity log as
+      // its own line. A bulk edit nobody can attribute is worse than no bulk
+      // edit: the log is the point of the board.
+      for (const c of rows) await patchCandidate(c.id, { status });
+      clearPicked();
+    } finally {
+      setBulk('');
+    }
+  };
 
   /** Add one and open it, because a blank row on a board you cannot see is not
    *  a useful outcome of pressing "Add a candidate". */
@@ -644,6 +750,22 @@ const Board = ({ mode }: TProps) => {
                 * candidate: how to reach them, and where they are coming from.
                 */}
               <tr>
+                <th className="col-pick">
+                  {/* Takes everything the filters have left on screen, which is
+                      what "all" means when a table is filtered. Indeterminate
+                      when the selection is partial, so the box reports the
+                      state rather than just offering the action. */}
+                  <input
+                    type="checkbox"
+                    aria-label={`Select all ${visiblePeople.length} on screen`}
+                    title={`Select all ${visiblePeople.length} on screen`}
+                    checked={visiblePeople.length > 0 && pickedHere.length === visiblePeople.length}
+                    ref={(el) => {
+                      if (el) el.indeterminate = pickedHere.length > 0 && pickedHere.length < visiblePeople.length;
+                    }}
+                    onChange={(e) => pickAll(e.target.checked)}
+                  />
+                </th>
                 <th className="col-ref">Ref</th>
                 <th className="col-who">Candidate</th>
                 {/* What they do now, what they are up for, and where they do
@@ -663,7 +785,19 @@ const Board = ({ mode }: TProps) => {
             </thead>
             <tbody>
               {visiblePeople.map((c) => (
-                  <tr key={c.id}>
+                  <tr key={c.id} data-picked={picked.has(c.id)}>
+                    <td className="cell-pick">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${c.name || 'this candidate'}`}
+                        checked={picked.has(c.id)}
+                        // `onClick` rather than `onChange`, because the modifier
+                        // key is only on the mouse event. Space still toggles:
+                        // the keyboard path fires a click with shiftKey false.
+                        onChange={() => {}}
+                        onClick={(e) => pick(c.id, e.shiftKey)}
+                      />
+                    </td>
                     <td className="cell-ref">#{c.ref}</td>
 
                     <td>
@@ -760,6 +894,68 @@ const Board = ({ mode }: TProps) => {
           )}
         </div>
       </div>
+
+      {/*
+        * What you do with a selection, docked to the bottom of the window.
+        *
+        * Docked rather than above the table: the rows being acted on are the
+        * ones you are looking at, and a bar that pushes the table down moves
+        * them out from under the cursor mid-triage. It exists only while
+        * something is picked, so it costs nothing when it has nothing to say.
+        *
+        * Reject and Shortlist are the two ends of a triage pass and nothing
+        * else — offer and hire are decisions about one person, made on their
+        * record with their rounds in front of you, and a batch of them would
+        * mean nobody read the evidence.
+        */}
+      {mode === 'people' && pickedHere.length > 0 && (
+        <div className="bulk-bar" role="region" aria-label="Selected candidates">
+          <span className="n">{pickedHere.length} selected</span>
+
+          <div className="spacer" />
+
+          {confirm === 'shortlisted' ? (
+            <>
+              {/* The number the click is really committing to. Four hundred
+                  rounds appearing on the rounds board is the kind of surprise
+                  you cannot undo with one click, so it is said first. */}
+              <span className="warn">
+                Books {roundsFromShortlist} round{roundsFromShortlist === 1 ? '' : 's'}
+              </span>
+              <button type="button" className="btn" disabled={!!bulk} onClick={() => void applyStatus('shortlisted')}>
+                {bulk === 'shortlisted' ? 'Shortlisting…' : 'Yes, shortlist'}
+              </button>
+              <button type="button" className="btn-quiet" onClick={() => setConfirm('')}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn-quiet"
+                disabled={!!bulk}
+                onClick={() => void applyStatus('rejected')}
+                title="Mark these as rejected. No rounds are created, and anything already recorded stays on the record."
+              >
+                {bulk === 'rejected' ? 'Rejecting…' : 'Reject'}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={!!bulk}
+                onClick={() => setConfirm('shortlisted')}
+                title="Shortlist these and build their ladders"
+              >
+                Shortlist
+              </button>
+              <button type="button" className="btn-quiet" onClick={clearPicked}>
+                Clear
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 };

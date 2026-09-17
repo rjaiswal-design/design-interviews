@@ -911,6 +911,82 @@ table.log {
 .log tbody tr.live td { background: var(--color-draft-bg); }
 .log tbody tr.live:hover td { background: #f7ecd6; }
 
+/* Picked rows take blue, which in this system means "you chose this" and
+   nothing else. It sits above the hover tint because the row you are pointing
+   at is often one of the picked ones, and the selection is the fact that
+   matters while a bulk action is a click away. */
+.log tbody tr[data-picked='true'] td { background: var(--color-pick-bg); }
+.log tbody tr[data-picked='true']:hover td { background: #e6edfb; }
+
+.col-pick { width: 34px; }
+
+/* The box, and nothing else: no hover band, no pointer affordance of its own.
+   A checkbox in a 34px column is already the whole target. */
+.cell-pick,
+.col-pick {
+  padding-inline: 12px 0;
+}
+
+.cell-pick input,
+.col-pick input {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--color-pick);
+  cursor: pointer;
+}
+
+/* What you do with a selection, docked to the bottom of the window.
+
+   Fixed rather than in the flow: it must not push the table down while you are
+   working through it, and the rows it acts on are the ones under it. Centred on
+   the viewport rather than the sheet, because it belongs to the window it is
+   docked to. */
+.bulk-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 16px;
+  z-index: var(--z-table-head);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin-inline: auto;
+  padding: 8px 10px 8px 16px;
+  border: 1px solid var(--prism-line);
+  border-radius: 999px;
+  background: var(--prism-bg);
+  /* Lifted off the table it floats over — the same five-step shadow the board
+     uses, so it reads as one surface above another rather than a banner. */
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.04),
+    0 2px 4px rgb(0 0 0 / 0.04),
+    0 6px 12px rgb(0 0 0 / 0.05),
+    0 12px 24px rgb(0 0 0 / 0.05),
+    0 24px 48px rgb(0 0 0 / 0.04);
+}
+
+.bulk-bar .n {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bulk-bar .spacer { width: 4px; }
+
+/* The count of work a shortlist would create. Stated in the bar, not in an
+   alert: it is a fact about the click, and it reads while the cursor is still
+   on the button. */
+.bulk-bar .warn {
+  font-size: 13px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .col-ref { width: 60px; }
 .col-who { width: auto; min-width: 240px; }
 /* Holds a round name over a status pill and a date. */
