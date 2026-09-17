@@ -82,6 +82,10 @@ type TState = {
 
   addCandidate: (partial?: Partial<TCandidate>) => Promise<string>;
   patchCandidate: (id: string, patch: Partial<TCandidate>) => Promise<void>;
+
+  /** The same patch across many candidates, in two requests rather than two
+   *  per row. See the implementation for why it is not a loop. */
+  patchCandidates: (ids: string[], patch: Partial<TCandidate>) => Promise<void>;
   /** Takes the rounds and the transcripts with it. A candidate row with
    *  orphaned rounds behind it is worse than no row. */
   removeCandidate: (id: string) => Promise<void>;
@@ -317,6 +321,74 @@ export const useStore = create<TState>((set, get) => ({
     // kept if anything happened in them — see the stale rule in `syncLadder`.
     const switched = patch.track !== undefined && patch.track !== current.track;
     if (entered || switched) await get().syncLadder(id);
+  },
+
+  /**
+   * One patch, many candidates.
+   *
+   * This was `for (const id of ids) await patchCandidate(...)`, and rejecting
+   * fifty-four people took half a minute: two round trips each, run one after
+   * another, with a store write and a re-render of an eighty-row table between
+   * every one of them. The work is not the problem — the sequencing is.
+   *
+   * So: every row and every log line is computed first, then written with one
+   * request per table and one `set` at the end. Fifty-four rows cost the same
+   * two round trips as one.
+   *
+   * The log is unchanged — still a line per candidate per field, still
+   * attributed — because that is the board's whole purpose and a faster bulk
+   * edit that nobody can trace back is not worth having.
+   */
+  patchCandidates: async (ids, patch) => {
+    const here = new Map(get().candidates.map((c) => [c.id, c]));
+    const rows: TCandidate[] = [];
+    const events: TEvent[] = [];
+    // One `t` for the batch, nudged apart per row, so the trail reads in the
+    // order the table was in rather than in whatever order equal stamps sort.
+    const t = Date.now();
+    const who = actor();
+    const email = actorEmail();
+
+    for (const id of ids) {
+      const current = here.get(id);
+      if (!current) continue;
+      rows.push(stamp({ ...current, ...patch }));
+      for (const what of candidateEvents(current, patch)) {
+        events.push({
+          id: newId('ev'),
+          candidateId: id,
+          roundId: '',
+          t: t + events.length,
+          actor: who,
+          actorEmail: email,
+          what,
+        });
+      }
+    }
+    if (!rows.length) return;
+
+    await db.candidates.putMany(rows);
+    if (events.length) await db.events.putMany(events);
+
+    const next = new Map(rows.map((r) => [r.id, r]));
+    set((s) => ({
+      candidates: s.candidates.map((c) => next.get(c.id) ?? c),
+      events: events.length > 0 ? [...events, ...s.events] : s.events,
+      lastWriteAt: Date.now(),
+    }));
+
+    // Ladders, for whoever this moved into the process. Sequential on purpose:
+    // `syncLadder` writes rounds keyed on candidate, and a hundred concurrent
+    // inserts against one table is how the foreign key race came back last
+    // time. Shortlisting a batch is rarer than rejecting one, and it is the
+    // click that already warns how many rounds it is about to book.
+    for (const r of rows) {
+      const before = here.get(r.id);
+      if (!before) continue;
+      const entered = !inProcess(before.status) && inProcess(r.status);
+      const switched = patch.track !== undefined && patch.track !== before.track;
+      if (entered || switched) await get().syncLadder(r.id);
+    }
   },
 
   removeCandidate: async (id) => {

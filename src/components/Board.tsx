@@ -127,6 +127,7 @@ const Board = ({ mode }: TProps) => {
   const candidates = useStore((s) => s.candidates);
   const rounds = useStore((s) => s.rounds);
   const patchCandidate = useStore((s) => s.patchCandidate);
+  const patchCandidates = useStore((s) => s.patchCandidates);
   const moveToRound = useStore((s) => s.moveToRound);
   const addCandidate = useStore((s) => s.addCandidate);
   const events = useStore((s) => s.events);
@@ -367,10 +368,9 @@ const Board = ({ mode }: TProps) => {
     setConfirm('');
     setBulk(status);
     try {
-      // One at a time, through the store, so each lands in the activity log as
-      // its own line. A bulk edit nobody can attribute is worse than no bulk
-      // edit: the log is the point of the board.
-      for (const c of rows) await patchCandidate(c.id, { status });
+      // One request per table for the whole selection, not one per row. Still
+      // a log line per candidate — see `patchCandidates`.
+      await patchCandidates(rows.map((c) => c.id), { status });
       clearPicked();
     } finally {
       setBulk('');
